@@ -38,6 +38,9 @@ const envSchema = z
     OPENAI_API_KEY: z.string().optional(),
     CATEGORY_EXTRACT_SYSTEM_PROMPT: z.string().optional(),
     CATEGORY_EXTRACT_MODEL: z.string().optional(),
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
+    VAPID_PRIVATE_KEY: z.string().optional(),
+    VAPID_SUBJECT: z.string().optional().default('mailto:spliit@example.com'),
   })
   .superRefine((env, ctx) => {
     if (

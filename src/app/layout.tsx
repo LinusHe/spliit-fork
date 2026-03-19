@@ -1,6 +1,7 @@
 import { ApplePwaSplash } from '@/app/apple-pwa-splash'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { ProgressBar } from '@/components/progress-bar'
+import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
@@ -168,6 +169,7 @@ export default async function RootLayout({
             <Suspense>
               <ProgressBar />
             </Suspense>
+            <ServiceWorkerRegister />
             <Content>{children}</Content>
           </ThemeProvider>
         </NextIntlClientProvider>
