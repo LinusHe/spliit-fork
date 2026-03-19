@@ -1,4 +1,5 @@
 import { ApplePwaSplash } from '@/app/apple-pwa-splash'
+import { AppVersion } from '@/components/app-version'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { ProgressBar } from '@/components/progress-bar'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
@@ -6,6 +7,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
+import { UpdateBanner } from '@/components/update-banner'
 import { env } from '@/lib/env'
 import { TRPCProvider } from '@/trpc/client'
 import type { Metadata, Viewport } from 'next'
@@ -141,8 +143,10 @@ function Content({ children }: { children: React.ReactNode }) {
               })}
             </span>
           </div>
+          <AppVersion />
         </div>
       </footer>
+      <UpdateBanner />
       <Toaster />
     </TRPCProvider>
   )

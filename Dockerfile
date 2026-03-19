@@ -20,8 +20,16 @@ COPY ./messages ./messages
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
+ARG BUILD_VERSION=0
+ARG BUILD_HASH=unknown
+ARG BUILD_DATE=unknown
+ENV BUILD_VERSION=${BUILD_VERSION}
+ENV BUILD_HASH=${BUILD_HASH}
+ENV BUILD_DATE=${BUILD_DATE}
+
+COPY ./public ./public
 COPY scripts/build.env .env
-RUN npm run build
+RUN sh scripts/generate-version.sh && npm run build
 
 RUN rm -r .next/cache
 
@@ -41,7 +49,7 @@ WORKDIR /usr/app
 
 COPY --from=base /usr/app/package.json /usr/app/package-lock.json /usr/app/next.config.mjs ./
 COPY --from=runtime-deps /usr/app/node_modules ./node_modules
-COPY ./public ./public
+COPY --from=base /usr/app/public ./public
 COPY ./scripts ./scripts
 COPY --from=base /usr/app/prisma ./prisma
 COPY --from=base /usr/app/.next ./.next

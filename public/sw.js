@@ -1,5 +1,26 @@
-// Spliit Push Notification Service Worker
+// Spliit Service Worker with Push Notifications + Auto-Update
 
+// Cache name includes version for cache busting
+const CACHE_VERSION = '__BUILD_VERSION__'
+
+self.addEventListener('install', (event) => {
+  // Skip waiting immediately when requested, or when a new version deploys
+  self.skipWaiting()
+})
+
+self.addEventListener('activate', (event) => {
+  // Claim all clients so the new SW takes effect immediately
+  event.waitUntil(self.clients.claim())
+})
+
+// Listen for skip-waiting message from the app
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
+})
+
+// Push notification handler
 self.addEventListener('push', (event) => {
   if (!event.data) return
 
