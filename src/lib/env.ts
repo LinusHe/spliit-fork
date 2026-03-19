@@ -36,6 +36,8 @@ const envSchema = z
       z.boolean().default(false),
     ),
     OPENAI_API_KEY: z.string().optional(),
+    CATEGORY_EXTRACT_SYSTEM_PROMPT: z.string().optional(),
+    CATEGORY_EXTRACT_MODEL: z.string().optional(),
   })
   .superRefine((env, ctx) => {
     if (
