@@ -4,23 +4,16 @@ import { CategoryIcon } from '@/app/groups/[groupId]/expenses/category-icon'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
+import { ChevronDown, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 import { useLocale } from 'next-intl'
+import { useState } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useCurrentGroup } from '../current-group-context'
 
 const COLORS = [
-  '#059669', // emerald-600
-  '#0891b2', // cyan-600
-  '#7c3aed', // violet-600
-  '#db2777', // pink-600
-  '#ea580c', // orange-600
-  '#2563eb', // blue-600
-  '#d97706', // amber-600
-  '#dc2626', // red-600
-  '#4f46e5', // indigo-600
-  '#65a30d', // lime-600
-  '#0d9488', // teal-600
-  '#9333ea', // purple-600
+  '#059669', '#0891b2', '#7c3aed', '#db2777', '#ea580c', '#2563eb',
+  '#d97706', '#dc2626', '#4f46e5', '#65a30d', '#0d9488', '#9333ea',
 ]
 
 function formatAmount(amount: number, currency: string, locale: string) {
@@ -35,14 +28,17 @@ function formatAmount(amount: number, currency: string, locale: string) {
   }
 }
 
+function formatDate(date: Date | string, locale: string) {
+  return new Date(date).toLocaleDateString(locale, {
+    day: '2-digit',
+    month: '2-digit',
+  })
+}
+
 interface CustomTooltipProps {
   active?: boolean
   payload?: Array<{
-    payload: {
-      name: string
-      value: number
-      percentage: number
-    }
+    payload: { name: string; value: number; percentage: number }
   }>
   currency: string
   locale: string
@@ -61,9 +57,65 @@ function CustomTooltip({ active, payload, currency, locale }: CustomTooltipProps
   )
 }
 
+function CategoryExpenseList({
+  groupId,
+  categoryId,
+  currencyCode,
+  locale,
+}: {
+  groupId: string
+  categoryId: number
+  currencyCode: string
+  locale: string
+}) {
+  const { data, isLoading } = trpc.groups.stats.categoryExpenses.useQuery({
+    groupId,
+    categoryId,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-2 py-2">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-8 w-full" />
+        ))}
+      </div>
+    )
+  }
+
+  if (!data?.length) {
+    return (
+      <p className="text-muted-foreground text-xs py-2">No expenses.</p>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-1 py-2">
+      {data.map((expense) => (
+        <Link
+          key={expense.id}
+          href={`/groups/${groupId}/expenses/${expense.id}/edit`}
+          className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors text-sm"
+        >
+          <div className="flex-1 min-w-0">
+            <span className="truncate block">{expense.title}</span>
+            <span className="text-xs text-muted-foreground">
+              {formatDate(expense.expenseDate, locale)} · {expense.paidByName}
+            </span>
+          </div>
+          <span className="text-sm font-medium ml-3 shrink-0">
+            {formatAmount(expense.amount, currencyCode, locale)}
+          </span>
+        </Link>
+      ))}
+    </div>
+  )
+}
+
 export function CategoryBreakdown() {
   const { groupId, group } = useCurrentGroup()
   const locale = useLocale()
+  const [expandedCategory, setExpandedCategory] = useState<number | null>(null)
   const { data, isLoading } = trpc.groups.stats.categoryBreakdown.useQuery({
     groupId,
   })
@@ -85,9 +137,12 @@ export function CategoryBreakdown() {
   const chartData = data.categories.map((cat) => ({
     name: cat.name,
     value: Math.abs(cat.total),
-    percentage: data.grandTotal ? (Math.abs(cat.total) / Math.abs(data.grandTotal)) * 100 : 0,
+    percentage: data.grandTotal
+      ? (Math.abs(cat.total) / Math.abs(data.grandTotal)) * 100
+      : 0,
     grouping: cat.grouping,
     id: cat.id,
+    count: cat.count,
   }))
 
   if (chartData.length === 0) {
@@ -96,6 +151,10 @@ export function CategoryBreakdown() {
         No expenses yet.
       </p>
     )
+  }
+
+  const toggleCategory = (catId: number) => {
+    setExpandedCategory((prev) => (prev === catId ? null : catId))
   }
 
   return (
@@ -131,44 +190,78 @@ export function CategoryBreakdown() {
       </div>
 
       {/* Category List */}
-      <div className="flex flex-col gap-2">
-        {chartData.map((cat, index) => (
-          <div key={cat.id} className="flex items-center gap-3">
-            {/* Color dot + Icon */}
-            <div
-              className="w-3 h-3 rounded-full shrink-0"
-              style={{ backgroundColor: COLORS[index % COLORS.length] }}
-            />
-            <CategoryIcon
-              category={{ id: cat.id, grouping: cat.grouping, name: cat.name } as any}
-              className="w-4 h-4 text-muted-foreground shrink-0"
-            />
+      <div className="flex flex-col gap-1">
+        {chartData.map((cat, index) => {
+          const isExpanded = expandedCategory === cat.id
+          return (
+            <div key={cat.id}>
+              <button
+                onClick={() => toggleCategory(cat.id)}
+                className="flex items-center gap-3 w-full py-2 px-1 rounded-md hover:bg-muted/50 transition-colors text-left"
+              >
+                {/* Expand indicator */}
+                {isExpanded ? (
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                )}
 
-            {/* Name + Bar */}
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-baseline mb-1">
-                <span className="text-sm font-medium truncate">{cat.name}</span>
-                <span className="text-sm text-muted-foreground ml-2 shrink-0">
-                  {formatAmount(cat.value, currencyCode, locale)}
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                {/* Color dot + Icon */}
                 <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${cat.percentage}%`,
-                    backgroundColor: COLORS[index % COLORS.length],
-                  }}
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
                 />
-              </div>
-            </div>
+                <CategoryIcon
+                  category={
+                    { id: cat.id, grouping: cat.grouping, name: cat.name } as any
+                  }
+                  className="w-4 h-4 text-muted-foreground shrink-0"
+                />
 
-            {/* Percentage */}
-            <span className="text-xs text-muted-foreground w-12 text-right shrink-0">
-              {cat.percentage.toFixed(1)}%
-            </span>
-          </div>
-        ))}
+                {/* Name + Bar */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-baseline mb-1">
+                    <span className="text-sm font-medium truncate">
+                      {cat.name}
+                      <span className="text-xs text-muted-foreground ml-1.5">
+                        ({cat.count})
+                      </span>
+                    </span>
+                    <span className="text-sm text-muted-foreground ml-2 shrink-0">
+                      {formatAmount(cat.value, currencyCode, locale)}
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${cat.percentage}%`,
+                        backgroundColor: COLORS[index % COLORS.length],
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Percentage */}
+                <span className="text-xs text-muted-foreground w-12 text-right shrink-0">
+                  {cat.percentage.toFixed(1)}%
+                </span>
+              </button>
+
+              {/* Expanded expense list */}
+              {isExpanded && (
+                <div className="ml-8 mr-1 border-l-2 pl-3" style={{ borderColor: COLORS[index % COLORS.length] }}>
+                  <CategoryExpenseList
+                    groupId={groupId}
+                    categoryId={cat.id}
+                    currencyCode={currencyCode}
+                    locale={locale}
+                  />
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
