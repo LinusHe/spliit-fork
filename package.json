@@ -61,6 +61,7 @@
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.68.0",
     "react-intersection-observer": "^10.0.0",
+    "recharts": "^3.8.0",
     "server-only": "^0.0.1",
     "sharp": "^0.33.2",
     "superjson": "^2.2.1",
