@@ -350,7 +350,9 @@
     "empty": "No group information yet."
   },
   "Settings": {
-    "title": "Settings"
+    "title": "Settings",
+    "language": "Language",
+    "languageDescription": "Change the display language."
   },
   "Share": {
     "title": "Share",
@@ -472,5 +474,12 @@
     "notifyOnCreate": "New expenses",
     "notifyOnUpdate": "Updated expenses",
     "notifyOnDelete": "Deleted expenses"
+  },
+  "NotificationPrompt": {
+    "title": "Stay in the loop",
+    "description": "Get notified when someone adds or changes an expense in your group.",
+    "pwaHint": "💡 Tip: For the best experience on iOS, add this app to your home screen first (Share → Add to Home Screen).",
+    "enable": "Enable notifications",
+    "dismiss": "Not now"
   }
 }

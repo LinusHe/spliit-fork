@@ -358,7 +358,9 @@
     "empty": "Noch keine Gruppeninformationen vorhanden."
   },
   "Settings": {
-    "title": "Einstellungen"
+    "title": "Einstellungen",
+    "language": "Sprache",
+    "languageDescription": "Anzeigesprache ändern."
   },
   "Share": {
     "title": "Teilen",
@@ -480,5 +482,12 @@
     "notifyOnCreate": "Neue Ausgaben",
     "notifyOnUpdate": "Geänderte Ausgaben",
     "notifyOnDelete": "Gelöschte Ausgaben"
+  },
+  "NotificationPrompt": {
+    "title": "Bleib auf dem Laufenden",
+    "description": "Werde benachrichtigt, wenn jemand eine Ausgabe hinzufügt oder ändert.",
+    "pwaHint": "💡 Tipp: Für das beste Erlebnis auf iOS, füge die App zuerst zum Homescreen hinzu (Teilen → Zum Home-Bildschirm).",
+    "enable": "Benachrichtigungen aktivieren",
+    "dismiss": "Nicht jetzt"
   }
 }

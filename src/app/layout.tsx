@@ -1,6 +1,5 @@
 import { ApplePwaSplash } from '@/app/apple-pwa-splash'
 import { AppVersion } from '@/components/app-version'
-import { LocaleSwitcher } from '@/components/locale-switcher'
 import { ProgressBar } from '@/components/progress-bar'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -13,7 +12,6 @@ import { TRPCProvider } from '@/trpc/client'
 import type { Metadata, Viewport } from 'next'
 import { NextIntlClientProvider, useTranslations } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import './globals.css'
@@ -70,81 +68,49 @@ function Content({ children }: { children: React.ReactNode }) {
   const t = useTranslations()
   return (
     <TRPCProvider>
-      <header className="fixed top-0 left-0 right-0 h-16 flex justify-between bg-white dark:bg-gray-950 bg-opacity-50 dark:bg-opacity-50 p-2 border-b backdrop-blur-sm z-50">
+      <header className="fixed top-0 left-0 right-0 h-14 flex justify-between items-center bg-white dark:bg-gray-950 bg-opacity-80 dark:bg-opacity-80 px-4 border-b backdrop-blur-md z-50">
         <Link
-          className="flex items-center gap-2 hover:scale-105 transition-transform"
-          href="/"
+          className="flex items-center gap-2 font-bold text-lg text-primary"
+          href="/groups"
         >
-          <h1>
-            <Image
-              src="/logo-with-text.png"
-              className="m-1 h-auto w-auto"
-              width={(35 * 522) / 180}
-              height={35}
-              alt="Spliit"
-            />
-          </h1>
+          Spliit
         </Link>
-        <div role="navigation" aria-label="Menu" className="flex">
-          <ul className="flex items-center text-sm">
-            <li>
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="-my-3 text-primary"
-              >
-                <Link href="/groups">{t('Header.groups')}</Link>
-              </Button>
-            </li>
-            <li>
-              <LocaleSwitcher />
-            </li>
-            <li>
-              <ThemeToggle />
-            </li>
-          </ul>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="text-muted-foreground"
+          >
+            <Link href="/groups">{t('Header.groups')}</Link>
+          </Button>
+          <ThemeToggle />
         </div>
       </header>
 
-      <div className="pt-16 flex-1 flex flex-col">{children}</div>
+      <div className="pt-14 flex-1 flex flex-col">{children}</div>
 
-      <footer className="sm:p-8 md:p-16 sm:mt-16 sm:text-sm md:text-base md:mt-32 bg-slate-50 dark:bg-card border-t p-6 mt-8 flex flex-col sm:flex-row sm:justify-between gap-4 text-xs [&_a]:underline">
-        <div className="flex flex-col space-y-2">
-          <div className="sm:text-lg font-semibold text-base flex space-x-2 items-center">
-            <Link className="flex items-center gap-2" href="/">
-              <Image
-                src="/logo-with-text.png"
-                className="m-1 h-auto w-auto"
-                width={(35 * 522) / 180}
-                height={35}
-                alt="Spliit"
-              />
-            </Link>
-          </div>
-          <div className="flex flex-col space-y a--no-underline-text-white">
-            <span>{t('Footer.madeIn')}</span>
-            <span>
-              {t.rich('Footer.builtBy', {
-                author: (txt) => (
-                  <a href="https://scastiel.dev" target="_blank" rel="noopener">
-                    {txt}
-                  </a>
-                ),
-                source: (txt) => (
-                  <a
-                    href="https://github.com/spliit-app/spliit/graphs/contributors"
-                    target="_blank"
-                    rel="noopener"
-                  >
-                    {txt}
-                  </a>
-                ),
-              })}
-            </span>
-          </div>
-          <AppVersion />
-        </div>
+      <footer className="bg-slate-50 dark:bg-card border-t p-4 mt-8 flex items-center justify-between text-xs text-muted-foreground">
+        <span>
+          {t.rich('Footer.builtBy', {
+            author: (txt) => (
+              <a href="https://scastiel.dev" target="_blank" rel="noopener" className="underline">
+                {txt}
+              </a>
+            ),
+            source: (txt) => (
+              <a
+                href="https://github.com/spliit-app/spliit/graphs/contributors"
+                target="_blank"
+                rel="noopener"
+                className="underline"
+              >
+                {txt}
+              </a>
+            ),
+          })}
+        </span>
+        <AppVersion />
       </footer>
       <UpdateBanner />
       <Toaster />

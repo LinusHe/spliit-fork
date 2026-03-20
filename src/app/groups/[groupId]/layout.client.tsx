@@ -4,8 +4,10 @@ import { useToast } from '@/components/ui/use-toast'
 import { trpc } from '@/trpc/client'
 import { useTranslations } from 'next-intl'
 import { PropsWithChildren, useEffect } from 'react'
+import { BottomNav } from './bottom-nav'
 import { CurrentGroupProvider } from './current-group-context'
 import { GroupHeader } from './group-header'
+import { NotificationPrompt } from './notification-prompt'
 import { SaveGroupLocally } from './save-recent-group'
 
 export function GroupLayoutClient({
@@ -43,6 +45,10 @@ export function GroupLayoutClient({
     <CurrentGroupProvider {...props}>
       <GroupHeader />
       {children}
+      {/* Bottom padding for the floating nav */}
+      <div className="h-24" />
+      <BottomNav groupId={groupId} />
+      <NotificationPrompt groupId={groupId} />
       <SaveGroupLocally />
     </CurrentGroupProvider>
   )
