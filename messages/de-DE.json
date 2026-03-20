@@ -260,7 +260,8 @@
       "useCustom": "Benutze individuelle Rate",
       "label": "Wechselkurs",
       "useApi": "Benutze Zinssätze von Frankfurter"
-    }
+    },
+    "duplicate": "Duplizieren"
   },
   "ExpenseDocumentsInput": {
     "TooBigToast": {

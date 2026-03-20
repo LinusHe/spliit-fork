@@ -14,17 +14,22 @@ export const getCategoryStatsProcedure = baseProcedure
       where: {
         groupId,
         isReimbursement: false,
-        ...(participantId ? { paidById: participantId } : {}),
       },
       select: {
         amount: true,
+        splitMode: true,
         category: {
           select: { id: true, grouping: true, name: true },
+        },
+        paidFor: {
+          select: {
+            participant: { select: { id: true } },
+            shares: true,
+          },
         },
       },
     })
 
-    // Aggregate by category
     const categoryMap = new Map<
       number,
       { id: number; grouping: string; name: string; total: number; count: number }
@@ -32,9 +37,33 @@ export const getCategoryStatsProcedure = baseProcedure
 
     for (const expense of expenses) {
       const catId = expense.category?.id ?? 0
-      const existing = categoryMap.get(catId)
-      const amount = expense.amount / 100
+      let amount: number
 
+      if (participantId) {
+        // Calculate this participant's share of the expense
+        const paidForEntry = expense.paidFor.find(
+          (pf) => pf.participant.id === participantId,
+        )
+        if (!paidForEntry) continue // Not involved in this expense
+
+        const totalShares = expense.paidFor.reduce((sum, pf) => sum + (pf.shares ?? 0), 0)
+
+        if (expense.splitMode === 'EVENLY') {
+          amount = (expense.amount / expense.paidFor.length) / 100
+        } else if (expense.splitMode === 'BY_SHARES' && totalShares > 0) {
+          amount = (expense.amount * (paidForEntry.shares ?? 0) / totalShares) / 100
+        } else if (expense.splitMode === 'BY_AMOUNT') {
+          amount = (paidForEntry.shares ?? 0) / 100
+        } else if (expense.splitMode === 'BY_PERCENTAGE' && totalShares > 0) {
+          amount = (expense.amount * (paidForEntry.shares ?? 0) / totalShares) / 100
+        } else {
+          amount = (expense.amount / expense.paidFor.length) / 100
+        }
+      } else {
+        amount = expense.amount / 100
+      }
+
+      const existing = categoryMap.get(catId)
       if (existing) {
         existing.total += amount
         existing.count += 1
