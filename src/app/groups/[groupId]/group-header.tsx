@@ -1,6 +1,7 @@
 'use client'
 
 import { ShareButton } from '@/app/groups/[groupId]/share-button'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Settings } from 'lucide-react'
@@ -11,11 +12,11 @@ export const GroupHeader = () => {
   const { isLoading, groupId, group } = useCurrentGroup()
 
   return (
-    <div className="flex items-center justify-between gap-3">
-      <h1 className="font-bold text-2xl flex-1 min-w-0">
+    <header className="fixed top-0 left-0 right-0 h-14 flex items-center justify-between bg-white dark:bg-gray-950 bg-opacity-80 dark:bg-opacity-80 px-4 border-b backdrop-blur-md z-50">
+      <h1 className="font-bold text-lg flex-1 min-w-0">
         <Link href={`/groups/${groupId}`}>
           {isLoading ? (
-            <Skeleton className="mt-1.5 mb-1.5 h-5 w-32" />
+            <Skeleton className="h-5 w-32" />
           ) : (
             <span className="truncate block">{group.name}</span>
           )}
@@ -29,7 +30,8 @@ export const GroupHeader = () => {
             <Settings className="w-5 h-5" />
           </Link>
         </Button>
+        <ThemeToggle />
       </div>
-    </div>
+    </header>
   )
 }

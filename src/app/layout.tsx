@@ -68,7 +68,7 @@ function Content({ children }: { children: React.ReactNode }) {
   const t = useTranslations()
   return (
     <TRPCProvider>
-      <header className="fixed top-0 left-0 right-0 h-14 flex justify-between items-center bg-white dark:bg-gray-950 bg-opacity-80 dark:bg-opacity-80 px-4 border-b backdrop-blur-md z-50">
+      <header id="global-header" className="fixed top-0 left-0 right-0 h-14 flex justify-between items-center bg-white dark:bg-gray-950 bg-opacity-80 dark:bg-opacity-80 px-4 border-b backdrop-blur-md z-50">
         <Link
           className="flex items-center gap-2 font-bold text-lg text-primary"
           href="/groups"
