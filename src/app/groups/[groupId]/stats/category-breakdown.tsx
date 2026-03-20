@@ -2,6 +2,8 @@
 
 import { CategoryIcon } from '@/app/groups/[groupId]/expenses/category-icon'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useActiveUser } from '@/lib/hooks'
 import { getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
 import { ChevronDown, ChevronRight } from 'lucide-react'
@@ -63,16 +65,19 @@ function CategoryExpenseList({
   currencyCode,
   locale,
   noItemsLabel,
+  participantId,
 }: {
   groupId: string
   categoryId: number
   currencyCode: string
   locale: string
   noItemsLabel: string
+  participantId?: string
 }) {
   const { data, isLoading } = trpc.groups.stats.categoryExpenses.useQuery({
     groupId,
     categoryId,
+    participantId,
   })
 
   if (isLoading) {
@@ -114,16 +119,28 @@ function CategoryExpenseList({
   )
 }
 
-export function CategoryBreakdown() {
-  const { groupId, group } = useCurrentGroup()
-  const locale = useLocale()
-  const t = useTranslations('Stats.Categories')
+function CategoryChart({
+  groupId,
+  participantId,
+  currencyCode,
+  locale,
+  noExpensesLabel,
+  noItemsLabel,
+}: {
+  groupId: string
+  participantId?: string
+  currencyCode: string
+  locale: string
+  noExpensesLabel: string
+  noItemsLabel: string
+}) {
   const [expandedCategory, setExpandedCategory] = useState<number | null>(null)
   const { data, isLoading } = trpc.groups.stats.categoryBreakdown.useQuery({
     groupId,
+    participantId,
   })
 
-  if (isLoading || !data || !group) {
+  if (isLoading || !data) {
     return (
       <div className="flex flex-col gap-4">
         <Skeleton className="h-48 w-48 mx-auto rounded-full" />
@@ -133,9 +150,6 @@ export function CategoryBreakdown() {
       </div>
     )
   }
-
-  const currency = getCurrencyFromGroup(group)
-  const currencyCode = group.currencyCode || currency.code || 'EUR'
 
   const chartData = data.categories.map((cat) => ({
     name: cat.name,
@@ -151,7 +165,7 @@ export function CategoryBreakdown() {
   if (chartData.length === 0) {
     return (
       <p className="text-muted-foreground text-sm text-center py-8">
-        {t('noExpenses')}
+        {noExpensesLabel}
       </p>
     )
   }
@@ -202,14 +216,11 @@ export function CategoryBreakdown() {
                 onClick={() => toggleCategory(cat.id)}
                 className="flex items-center gap-3 w-full py-2 px-1 rounded-md hover:bg-muted/50 transition-colors text-left"
               >
-                {/* Expand indicator */}
                 {isExpanded ? (
                   <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                 ) : (
                   <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                 )}
-
-                {/* Color dot + Icon */}
                 <div
                   className="w-3 h-3 rounded-full shrink-0"
                   style={{ backgroundColor: COLORS[index % COLORS.length] }}
@@ -220,8 +231,6 @@ export function CategoryBreakdown() {
                   }
                   className="w-4 h-4 text-muted-foreground shrink-0"
                 />
-
-                {/* Name + Bar */}
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-1">
                     <span className="text-sm font-medium truncate">
@@ -244,22 +253,23 @@ export function CategoryBreakdown() {
                     />
                   </div>
                 </div>
-
-                {/* Percentage */}
                 <span className="text-xs text-muted-foreground w-12 text-right shrink-0">
                   {cat.percentage.toFixed(1)}%
                 </span>
               </button>
 
-              {/* Expanded expense list */}
               {isExpanded && (
-                <div className="ml-8 mr-1 border-l-2 pl-3" style={{ borderColor: COLORS[index % COLORS.length] }}>
+                <div
+                  className="ml-8 mr-1 border-l-2 pl-3"
+                  style={{ borderColor: COLORS[index % COLORS.length] }}
+                >
                   <CategoryExpenseList
                     groupId={groupId}
                     categoryId={cat.id}
                     currencyCode={currencyCode}
                     locale={locale}
-                    noItemsLabel={t('noItems')}
+                    noItemsLabel={noItemsLabel}
+                    participantId={participantId}
                   />
                 </div>
               )}
@@ -268,5 +278,68 @@ export function CategoryBreakdown() {
         })}
       </div>
     </div>
+  )
+}
+
+export function CategoryBreakdown() {
+  const { groupId, group } = useCurrentGroup()
+  const locale = useLocale()
+  const t = useTranslations('Stats.Categories')
+  const activeUser = useActiveUser(groupId)
+  const participantId =
+    activeUser && activeUser !== 'None' ? activeUser : undefined
+
+  if (!group) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-48 w-48 mx-auto rounded-full" />
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-10 w-full" />
+        ))}
+      </div>
+    )
+  }
+
+  const currency = getCurrencyFromGroup(group)
+  const currencyCode = group.currencyCode || currency.code || 'EUR'
+
+  return (
+    <Tabs defaultValue="group">
+      <TabsList className="w-full">
+        <TabsTrigger value="group" className="flex-1">
+          {t('tabGroup')}
+        </TabsTrigger>
+        <TabsTrigger value="mine" className="flex-1" disabled={!participantId}>
+          {t('tabMine')}
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="group" className="mt-4">
+        <CategoryChart
+          groupId={groupId}
+          currencyCode={currencyCode}
+          locale={locale}
+          noExpensesLabel={t('noExpenses')}
+          noItemsLabel={t('noItems')}
+        />
+      </TabsContent>
+
+      <TabsContent value="mine" className="mt-4">
+        {participantId ? (
+          <CategoryChart
+            groupId={groupId}
+            participantId={participantId}
+            currencyCode={currencyCode}
+            locale={locale}
+            noExpensesLabel={t('noExpenses')}
+            noItemsLabel={t('noItems')}
+          />
+        ) : (
+          <p className="text-muted-foreground text-sm text-center py-8">
+            {t('selectUser')}
+          </p>
+        )}
+      </TabsContent>
+    </Tabs>
   )
 }

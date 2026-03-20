@@ -316,7 +316,10 @@
       "title": "Categories",
       "description": "Spending breakdown by category",
       "noExpenses": "No expenses yet.",
-      "noItems": "No expenses."
+      "noItems": "No expenses.",
+      "tabGroup": "Group",
+      "tabMine": "Mine",
+      "selectUser": "Select your name in the group to see your spending."
     }
   },
   "Activity": {

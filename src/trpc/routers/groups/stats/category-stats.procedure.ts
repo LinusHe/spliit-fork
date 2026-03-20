@@ -6,11 +6,16 @@ export const getCategoryStatsProcedure = baseProcedure
   .input(
     z.object({
       groupId: z.string().min(1),
+      participantId: z.string().optional(),
     }),
   )
-  .query(async ({ input: { groupId } }) => {
+  .query(async ({ input: { groupId, participantId } }) => {
     const expenses = await prisma.expense.findMany({
-      where: { groupId, isReimbursement: false },
+      where: {
+        groupId,
+        isReimbursement: false,
+        ...(participantId ? { paidById: participantId } : {}),
+      },
       select: {
         amount: true,
         category: {
@@ -28,7 +33,7 @@ export const getCategoryStatsProcedure = baseProcedure
     for (const expense of expenses) {
       const catId = expense.category?.id ?? 0
       const existing = categoryMap.get(catId)
-      const amount = expense.amount / 100 // cents to currency
+      const amount = expense.amount / 100
 
       if (existing) {
         existing.total += amount

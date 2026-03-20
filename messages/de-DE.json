@@ -324,7 +324,10 @@
       "title": "Kategorien",
       "description": "Aufschlüsselung der Ausgaben nach Kategorie",
       "noExpenses": "Noch keine Ausgaben.",
-      "noItems": "Keine Ausgaben."
+      "noItems": "Keine Ausgaben.",
+      "tabGroup": "Gruppe",
+      "tabMine": "Meine",
+      "selectUser": "Wähle deinen Namen in der Gruppe aus, um deine Ausgaben zu sehen."
     }
   },
   "Activity": {
