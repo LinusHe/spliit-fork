@@ -1,6 +1,7 @@
 'use client'
 
 import GroupInformation from '@/app/groups/[groupId]/information/group-information'
+import { AppVersion } from '@/components/app-version'
 import { GroupForm } from '@/components/group-form'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { NotificationSettings } from '@/components/notification-settings'
@@ -43,6 +44,25 @@ export const EditGroup = () => {
         </CardHeader>
         <CardContent>
           <LocaleSwitcher />
+        </CardContent>
+      </Card>
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>{t('about')}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
+          <AppVersion />
+          <p>
+            {t('builtWith')}{' '}
+            <a
+              href="https://github.com/spliit-app/spliit"
+              target="_blank"
+              rel="noopener"
+              className="underline"
+            >
+              Spliit
+            </a>
+          </p>
         </CardContent>
       </Card>
     </>

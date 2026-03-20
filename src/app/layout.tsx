@@ -1,10 +1,8 @@
 import { ApplePwaSplash } from '@/app/apple-pwa-splash'
-import { AppVersion } from '@/components/app-version'
 import { ProgressBar } from '@/components/progress-bar'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
 import { UpdateBanner } from '@/components/update-banner'
 import { env } from '@/lib/env'
@@ -76,42 +74,11 @@ function Content({ children }: { children: React.ReactNode }) {
           Spliit
         </Link>
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            asChild
-            className="text-muted-foreground"
-          >
-            <Link href="/groups">{t('Header.groups')}</Link>
-          </Button>
           <ThemeToggle />
         </div>
       </header>
 
       <div className="pt-14 flex-1 flex flex-col">{children}</div>
-
-      <footer className="bg-slate-50 dark:bg-card border-t p-4 mt-8 flex items-center justify-between text-xs text-muted-foreground">
-        <span>
-          {t.rich('Footer.builtBy', {
-            author: (txt) => (
-              <a href="https://scastiel.dev" target="_blank" rel="noopener" className="underline">
-                {txt}
-              </a>
-            ),
-            source: (txt) => (
-              <a
-                href="https://github.com/spliit-app/spliit/graphs/contributors"
-                target="_blank"
-                rel="noopener"
-                className="underline"
-              >
-                {txt}
-              </a>
-            ),
-          })}
-        </span>
-        <AppVersion />
-      </footer>
       <UpdateBanner />
       <Toaster />
     </TRPCProvider>

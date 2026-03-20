@@ -360,7 +360,9 @@
   "Settings": {
     "title": "Einstellungen",
     "language": "Sprache",
-    "languageDescription": "Anzeigesprache ändern."
+    "languageDescription": "Anzeigesprache ändern.",
+    "about": "Über",
+    "builtWith": "Basierend auf"
   },
   "Share": {
     "title": "Teilen",

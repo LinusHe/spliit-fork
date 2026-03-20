@@ -18,15 +18,12 @@ export function GroupLayoutClient({
   const t = useTranslations('Groups.NotFound')
   const { toast } = useToast()
 
-  // Hide global header and footer when inside a group (we have our own)
+  // Hide global header when inside a group (we have our own)
   useEffect(() => {
     const globalHeader = document.getElementById('global-header')
-    const footer = document.querySelector('footer')
     if (globalHeader) globalHeader.style.display = 'none'
-    if (footer) footer.style.display = 'none'
     return () => {
       if (globalHeader) globalHeader.style.display = ''
-      if (footer) footer.style.display = ''
     }
   }, [])
 
