@@ -4,14 +4,26 @@ import { env } from '@/lib/env'
 import { formatCategoryForAIPrompt } from '@/lib/utils'
 import OpenAI from 'openai'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources/index.mjs'
+import { readFile, unlink } from 'fs/promises'
 
 const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY })
 
 export async function extractExpenseInformationFromImage(
-  imageBase64: string,
+  filePath: string,
   mimeType: string,
 ) {
   'use server'
+
+  // Read file from disk and convert to base64
+  let imageBase64: string
+  try {
+    const buffer = await readFile(filePath)
+    imageBase64 = buffer.toString('base64')
+  } finally {
+    // Always clean up the temp file
+    await unlink(filePath).catch(() => {})
+  }
+
   const categories = await getCategories()
 
   const body: ChatCompletionCreateParamsNonStreaming = {

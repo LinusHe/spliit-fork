@@ -35,20 +35,7 @@ import { useRouter } from 'next/navigation'
 import { PropsWithChildren, ReactNode, useRef, useState } from 'react'
 import { useCurrentGroup } from '../current-group-context'
 
-const MAX_FILE_SIZE = 5 * 1024 ** 2
-
-function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result as string
-      // Strip the data:...;base64, prefix
-      resolve(result.split(',')[1])
-    }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
+const MAX_FILE_SIZE = 10 * 1024 ** 2
 
 function getImageDimensions(
   file: File,
@@ -120,7 +107,7 @@ function ReceiptDialogContent() {
       toast({
         title: t('TooBigToast.title'),
         description: t('TooBigToast.description', {
-          maxSize: '5 MB',
+          maxSize: '10 MB',
           size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
         }),
         variant: 'destructive',
@@ -136,15 +123,21 @@ function ReceiptDialogContent() {
         const objectUrl = URL.createObjectURL(file)
         setPreviewUrl(objectUrl)
 
-        // Read as base64 and get dimensions
-        const [base64, dimensions] = await Promise.all([
-          readFileAsBase64(file),
-          getImageDimensions(file),
-        ])
+        // Upload file via API route (avoids Server Action body limit)
+        const formData = new FormData()
+        formData.append('file', file)
+        const uploadRes = await fetch('/api/receipt-upload', {
+          method: 'POST',
+          body: formData,
+        })
+        if (!uploadRes.ok) throw new Error('Upload failed')
+        const { path: filePath } = (await uploadRes.json()) as { path: string }
 
-        // Send to server action
+        const dimensions = await getImageDimensions(file)
+
+        // Server action reads from disk, sends to OpenAI, then deletes
         const result = await extractExpenseInformationFromImage(
-          base64,
+          filePath,
           file.type,
         )
         setReceiptInfo({ ...result, ...dimensions })
