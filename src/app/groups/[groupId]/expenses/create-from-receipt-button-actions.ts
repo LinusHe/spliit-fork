@@ -39,7 +39,7 @@ Read the total amount and store it as a non-formatted number without any other t
 Then guess the category for this receipt among the following categories and store its ID: ${categories.map(
               (category) => formatCategoryForAIPrompt(category),
             )}.
-Guess the expense's date and store it as yyyy-mm-dd.
+If a date is clearly visible on the receipt, extract it as yyyy-mm-dd. If no date is visible, return "none" for the date field.
 Guess a title for the expense.
 Return the amount, the category, the date and the title with just a comma between them, without anything else.`,
           },
@@ -63,10 +63,12 @@ Return the amount, the category, the date and the title with just a comma betwee
       null,
     ]
   const title = titleParts.join(',').trim() || null
+  const parsedDate = date?.trim()
+  const today = new Date().toISOString().split('T')[0]
   return {
     amount: Number(amountString),
     categoryId: categoryId?.trim() ?? null,
-    date: date?.trim() ?? null,
+    date: (!parsedDate || parsedDate === 'none') ? today : parsedDate,
     title,
   }
 }
