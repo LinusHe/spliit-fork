@@ -1,6 +1,5 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -191,25 +190,22 @@ export function NotificationSettings({ groupId }: { groupId: string }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         {/* Subscribe/Unsubscribe */}
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
             <p className="text-sm font-medium">
               {isSubscribed ? t('enabled') : t('disabled')}
             </p>
-            {permissionDenied && !isSubscribed && (
-              <p className="text-xs text-destructive mt-1">
-                {t('permissionDenied')}
-              </p>
-            )}
+            <Switch
+              checked={isSubscribed}
+              onCheckedChange={handleToggleSubscription}
+              disabled={isLoading || (permissionDenied && !isSubscribed)}
+            />
           </div>
-          <Button
-            variant={isSubscribed ? 'outline' : 'default'}
-            size="sm"
-            onClick={handleToggleSubscription}
-            disabled={isLoading || (permissionDenied && !isSubscribed)}
-          >
-            {isSubscribed ? t('disableButton') : t('enableButton')}
-          </Button>
+          {permissionDenied && !isSubscribed && (
+            <p className="text-xs text-destructive">
+              {t('permissionDenied')}
+            </p>
+          )}
         </div>
 
         {/* Preferences (only shown when subscribed) */}
