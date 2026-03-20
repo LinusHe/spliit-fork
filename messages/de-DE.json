@@ -281,6 +281,8 @@
       "description": "Ausgabeninformationen von einem Foto einer Rechnung lesen.",
       "body": "Lade ein Foto der Rechnung hoch und wir versuchen die Ausgabeinformationen zu extrahieren.",
       "selectImage": "Bild wählen…",
+      "camera": "Kamera",
+      "gallery": "Galerie",
       "titleLabel": "Titel:",
       "categoryLabel": "Kategorie:",
       "amountLabel": "Betrag:",

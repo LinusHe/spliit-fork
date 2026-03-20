@@ -28,7 +28,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { useMediaQuery } from '@/lib/hooks'
 import { formatCurrency, formatDate, getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
-import { ChevronRight, FileQuestion, Loader2, Receipt } from 'lucide-react'
+import { Camera, ChevronRight, FileQuestion, ImageIcon, Loader2, Receipt } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -92,7 +92,8 @@ function ReceiptDialogContent() {
   const [pending, setPending] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [receiptInfo, setReceiptInfo] = useState<
     | null
@@ -173,40 +174,60 @@ function ReceiptDialogContent() {
       <p>{t('Dialog.body')}</p>
       <div>
         <input
-          ref={fileInputRef}
+          ref={cameraInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic"
+          accept="image/*"
           capture="environment"
           className="hidden"
           onChange={handleFileChange}
         />
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/heic"
+          className="hidden"
+          onChange={handleFileChange}
+        />
         <div className="grid gap-x-4 gap-y-2 grid-cols-3">
-          <Button
-            variant="secondary"
-            className="row-span-3 w-full h-full relative min-h-[120px]"
-            title="Create expense from receipt"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={pending}
-          >
+          <div className="row-span-3 w-full h-full relative min-h-[120px]">
             {pending ? (
-              <Loader2 className="w-8 h-8 animate-spin" />
+              <div className="flex items-center justify-center w-full h-full">
+                <Loader2 className="w-8 h-8 animate-spin" />
+              </div>
             ) : previewUrl ? (
-              <div className="absolute top-2 left-2 bottom-2 right-2">
+              <div className="w-full h-full">
                 <Image
                   src={previewUrl}
                   width={receiptInfo?.width || 300}
                   height={receiptInfo?.height || 400}
-                  className="w-full h-full m-0 object-contain drop-shadow-lg"
+                  className="w-full h-full m-0 object-contain drop-shadow-lg rounded-md"
                   alt="Scanned receipt"
                   unoptimized
                 />
               </div>
             ) : (
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                {t('Dialog.selectImage')}
-              </span>
+              <div className="flex flex-col gap-2 w-full h-full">
+                <Button
+                  variant="secondary"
+                  className="flex-1 w-full"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={pending}
+                >
+                  <Camera className="w-5 h-5 mr-2" />
+                  {t('Dialog.camera')}
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="flex-1 w-full"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={pending}
+                >
+                  <ImageIcon className="w-5 h-5 mr-2" />
+                  {t('Dialog.gallery')}
+                </Button>
+              </div>
             )}
-          </Button>
+          </div>
           <div className="col-span-2">
             <strong>{t('Dialog.titleLabel')}</strong>
             <div>{receiptInfo ? receiptInfo.title ?? <Unknown /> : '…'}</div>
