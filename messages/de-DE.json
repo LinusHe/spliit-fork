@@ -319,6 +319,12 @@
       "yourSpendings": "Deine gesamten Ausgaben",
       "yourEarnings": "Deine gesamten Einnahmen",
       "yourShare": "Dein gesamter Anteil"
+    },
+    "Categories": {
+      "title": "Kategorien",
+      "description": "Aufschlüsselung der Ausgaben nach Kategorie",
+      "noExpenses": "Noch keine Ausgaben.",
+      "noItems": "Keine Ausgaben."
     }
   },
   "Activity": {
@@ -455,5 +461,20 @@
     "common": {
       "heading": "Geläufigste"
     }
+  },
+  "Notifications": {
+    "title": "Benachrichtigungen",
+    "description": "Werde benachrichtigt, wenn Gruppenmitglieder Ausgaben hinzufügen, bearbeiten oder löschen.",
+    "enableButton": "Benachrichtigungen aktivieren",
+    "disableButton": "Benachrichtigungen deaktivieren",
+    "enabled": "Benachrichtigungen aktiviert",
+    "disabled": "Benachrichtigungen deaktiviert",
+    "notSupported": "Push-Benachrichtigungen werden in diesem Browser nicht unterstützt. Auf iOS muss die App zuerst zum Homescreen hinzugefügt werden.",
+    "noActiveUser": "Wähle deinen Namen in der Gruppe aus, um Benachrichtigungen zu aktivieren.",
+    "permissionDenied": "Benachrichtigungsberechtigung wurde abgelehnt. Bitte erlaube Benachrichtigungen in den Browsereinstellungen.",
+    "settings": "Benachrichtigungseinstellungen",
+    "notifyOnCreate": "Neue Ausgaben",
+    "notifyOnUpdate": "Geänderte Ausgaben",
+    "notifyOnDelete": "Gelöschte Ausgaben"
   }
 }

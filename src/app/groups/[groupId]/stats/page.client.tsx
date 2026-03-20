@@ -26,8 +26,8 @@ export function TotalsPageClient() {
 
       <Card className="mb-4">
         <CardHeader>
-          <CardTitle>Categories</CardTitle>
-          <CardDescription>Spending breakdown by category</CardDescription>
+          <CardTitle>{t('Categories.title')}</CardTitle>
+          <CardDescription>{t('Categories.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <CategoryBreakdown />

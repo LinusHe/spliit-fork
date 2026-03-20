@@ -182,7 +182,6 @@
       "recurrenceRule": {
         "label": "Expense Recurrence",
         "description": "Select how often the expense should repeat.",
-
         "none": "None",
         "daily": "Daily",
         "weekly": "Weekly",
@@ -312,6 +311,12 @@
       "yourSpendings": "Your total spendings",
       "yourEarnings": "Your total earnings",
       "yourShare": "Your total share"
+    },
+    "Categories": {
+      "title": "Categories",
+      "description": "Spending breakdown by category",
+      "noExpenses": "No expenses yet.",
+      "noItems": "No expenses."
     }
   },
   "Activity": {
@@ -448,5 +453,20 @@
     "other": {
       "heading": "Other currencies"
     }
+  },
+  "Notifications": {
+    "title": "Notifications",
+    "description": "Get notified when group members add, edit, or delete expenses.",
+    "enableButton": "Enable notifications",
+    "disableButton": "Disable notifications",
+    "enabled": "Notifications enabled",
+    "disabled": "Notifications disabled",
+    "notSupported": "Push notifications are not supported in this browser. On iOS, add this app to your home screen first.",
+    "noActiveUser": "Select your name in the group to enable notifications.",
+    "permissionDenied": "Notification permission was denied. Please allow notifications in your browser settings.",
+    "settings": "Notification Settings",
+    "notifyOnCreate": "New expenses",
+    "notifyOnUpdate": "Updated expenses",
+    "notifyOnDelete": "Deleted expenses"
   }
 }

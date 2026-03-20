@@ -34,7 +34,7 @@ export const updateGroupExpenseProcedure = baseProcedure
           title: 'Expense Updated',
           body: `${participantName} updated: ${expenseFormValues.title}`,
           url: `/groups/${groupId}`,
-        }).catch(() => {})
+        }, 'update').catch(() => {})
       })
 
       return { expenseId: expense.id }

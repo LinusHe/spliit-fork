@@ -6,10 +6,13 @@ export interface NotificationPayload {
   url?: string
 }
 
+export type NotificationEvent = 'create' | 'update' | 'delete'
+
 export async function sendPushNotificationsToGroup(
   groupId: string,
   excludeParticipantId: string | undefined,
   payload: NotificationPayload,
+  event: NotificationEvent = 'create',
 ) {
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
   const privateKey = process.env.VAPID_PRIVATE_KEY
@@ -22,12 +25,21 @@ export async function sendPushNotificationsToGroup(
     const webpush = (await import('web-push')).default
     webpush.setVapidDetails(subject, publicKey, privateKey)
 
+    // Filter by event preference
+    const preferenceFilter =
+      event === 'create'
+        ? { notifyOnCreate: true }
+        : event === 'update'
+          ? { notifyOnUpdate: true }
+          : { notifyOnDelete: true }
+
     const subscriptions = await prisma.pushSubscription.findMany({
       where: {
         participant: { groupId },
         ...(excludeParticipantId
           ? { participantId: { not: excludeParticipantId } }
           : {}),
+        ...preferenceFilter,
       },
     })
 

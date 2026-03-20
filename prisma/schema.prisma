@@ -34,13 +34,16 @@ model Participant {
 }
 
 model PushSubscription {
-  id            String      @id @default(cuid())
-  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
-  participantId String
-  endpoint      String
-  p256dh        String
-  auth          String
-  createdAt     DateTime    @default(now())
+  id              String      @id @default(cuid())
+  participant     Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  participantId   String
+  endpoint        String
+  p256dh          String
+  auth            String
+  notifyOnCreate  Boolean     @default(true)
+  notifyOnUpdate  Boolean     @default(true)
+  notifyOnDelete  Boolean     @default(true)
+  createdAt       DateTime    @default(now())
 
   @@unique([participantId, endpoint])
 }

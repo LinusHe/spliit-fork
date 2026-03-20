@@ -37,7 +37,7 @@ export const createGroupExpenseProcedure = baseProcedure
           title: 'New Expense',
           body: `${participantName} added: ${expenseFormValues.title} (${amountStr})`,
           url: `/groups/${groupId}`,
-        }).catch(() => {})
+        }, 'create').catch(() => {})
       })
 
       return { expenseId: expense.id }

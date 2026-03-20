@@ -26,7 +26,7 @@ export const deleteGroupExpenseProcedure = baseProcedure
           title: 'Expense Deleted',
           body: `${participantName} deleted: ${existingExpense.title}`,
           url: `/groups/${groupId}`,
-        }).catch(() => {})
+        }, 'delete').catch(() => {})
       })
     }
 

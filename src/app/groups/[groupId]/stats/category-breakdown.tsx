@@ -6,7 +6,7 @@ import { getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useCurrentGroup } from '../current-group-context'
@@ -62,11 +62,13 @@ function CategoryExpenseList({
   categoryId,
   currencyCode,
   locale,
+  noItemsLabel,
 }: {
   groupId: string
   categoryId: number
   currencyCode: string
   locale: string
+  noItemsLabel: string
 }) {
   const { data, isLoading } = trpc.groups.stats.categoryExpenses.useQuery({
     groupId,
@@ -85,7 +87,7 @@ function CategoryExpenseList({
 
   if (!data?.length) {
     return (
-      <p className="text-muted-foreground text-xs py-2">No expenses.</p>
+      <p className="text-muted-foreground text-xs py-2">{noItemsLabel}</p>
     )
   }
 
@@ -115,6 +117,7 @@ function CategoryExpenseList({
 export function CategoryBreakdown() {
   const { groupId, group } = useCurrentGroup()
   const locale = useLocale()
+  const t = useTranslations('Stats.Categories')
   const [expandedCategory, setExpandedCategory] = useState<number | null>(null)
   const { data, isLoading } = trpc.groups.stats.categoryBreakdown.useQuery({
     groupId,
@@ -148,7 +151,7 @@ export function CategoryBreakdown() {
   if (chartData.length === 0) {
     return (
       <p className="text-muted-foreground text-sm text-center py-8">
-        No expenses yet.
+        {t('noExpenses')}
       </p>
     )
   }
@@ -256,6 +259,7 @@ export function CategoryBreakdown() {
                     categoryId={cat.id}
                     currencyCode={currencyCode}
                     locale={locale}
+                    noItemsLabel={t('noItems')}
                   />
                 </div>
               )}

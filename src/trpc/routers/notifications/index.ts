@@ -76,4 +76,49 @@ export const notificationsRouter = createTRPCRouter({
       })
       return { subscribed: count > 0 }
     }),
+
+  getPreferences: baseProcedure
+    .input(
+      z.object({
+        participantId: z.string().min(1),
+      }),
+    )
+    .query(async ({ input }) => {
+      const subs = await prisma.pushSubscription.findMany({
+        where: { participantId: input.participantId },
+        select: {
+          notifyOnCreate: true,
+          notifyOnUpdate: true,
+          notifyOnDelete: true,
+        },
+      })
+      // Return preferences from first subscription (all subs share same prefs)
+      if (subs.length === 0) {
+        return { subscribed: false, notifyOnCreate: true, notifyOnUpdate: true, notifyOnDelete: true }
+      }
+      return {
+        subscribed: true,
+        notifyOnCreate: subs[0].notifyOnCreate,
+        notifyOnUpdate: subs[0].notifyOnUpdate,
+        notifyOnDelete: subs[0].notifyOnDelete,
+      }
+    }),
+
+  updatePreferences: baseProcedure
+    .input(
+      z.object({
+        participantId: z.string().min(1),
+        notifyOnCreate: z.boolean(),
+        notifyOnUpdate: z.boolean(),
+        notifyOnDelete: z.boolean(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { participantId, notifyOnCreate, notifyOnUpdate, notifyOnDelete } = input
+      await prisma.pushSubscription.updateMany({
+        where: { participantId },
+        data: { notifyOnCreate, notifyOnUpdate, notifyOnDelete },
+      })
+      return { success: true }
+    }),
 })
