@@ -26,22 +26,40 @@ import {
 import { ToastAction } from '@/components/ui/toast'
 import { useToast } from '@/components/ui/use-toast'
 import { useMediaQuery } from '@/lib/hooks'
-import {
-  formatCurrency,
-  formatDate,
-  formatFileSize,
-  getCurrencyFromGroup,
-} from '@/lib/utils'
+import { formatCurrency, formatDate, getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
 import { ChevronRight, FileQuestion, Loader2, Receipt } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
-import { getImageData, usePresignedUpload } from 'next-s3-upload'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { PropsWithChildren, ReactNode, useState } from 'react'
+import { PropsWithChildren, ReactNode, useRef, useState } from 'react'
 import { useCurrentGroup } from '../current-group-context'
 
 const MAX_FILE_SIZE = 5 * 1024 ** 2
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result as string
+      // Strip the data:...;base64, prefix
+      resolve(result.split(',')[1])
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+function getImageDimensions(
+  file: File,
+): Promise<{ width: number; height: number }> {
+  return new Promise((resolve) => {
+    const img = new window.Image()
+    img.onload = () => resolve({ width: img.width, height: img.height })
+    img.onerror = () => resolve({ width: 300, height: 400 })
+    img.src = URL.createObjectURL(file)
+  })
+}
 
 export function CreateFromReceiptButton() {
   const t = useTranslations('CreateFromReceipt')
@@ -85,37 +103,51 @@ function ReceiptDialogContent() {
   const locale = useLocale()
   const t = useTranslations('CreateFromReceipt')
   const [pending, setPending] = useState(false)
-  const { uploadToS3, FileInput, openFileDialog } = usePresignedUpload()
   const { toast } = useToast()
   const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [receiptInfo, setReceiptInfo] = useState<
     | null
-    | (ReceiptExtractedInfo & { url: string; width?: number; height?: number })
+    | (ReceiptExtractedInfo & { width?: number; height?: number })
   >(null)
 
-  const handleFileChange = async (file: File) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
     if (file.size > MAX_FILE_SIZE) {
       toast({
         title: t('TooBigToast.title'),
         description: t('TooBigToast.description', {
-          maxSize: formatFileSize(MAX_FILE_SIZE, locale),
-          size: formatFileSize(file.size, locale),
+          maxSize: '5 MB',
+          size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
         }),
         variant: 'destructive',
       })
       return
     }
 
-    const upload = async () => {
+    const process = async () => {
       try {
         setPending(true)
-        console.log('Uploading image…')
-        let { url } = await uploadToS3(file)
-        console.log('Extracting information from receipt…')
-        const { amount, categoryId, date, title } =
-          await extractExpenseInformationFromImage(url)
-        const { width, height } = await getImageData(file)
-        setReceiptInfo({ amount, categoryId, date, title, url, width, height })
+
+        // Create preview
+        const objectUrl = URL.createObjectURL(file)
+        setPreviewUrl(objectUrl)
+
+        // Read as base64 and get dimensions
+        const [base64, dimensions] = await Promise.all([
+          readFileAsBase64(file),
+          getImageDimensions(file),
+        ])
+
+        // Send to server action
+        const result = await extractExpenseInformationFromImage(
+          base64,
+          file.type,
+        )
+        setReceiptInfo({ ...result, ...dimensions })
       } catch (err) {
         console.error(err)
         toast({
@@ -125,7 +157,7 @@ function ReceiptDialogContent() {
           action: (
             <ToastAction
               altText={t('ErrorToast.retry')}
-              onClick={() => upload()}
+              onClick={() => process()}
             >
               {t('ErrorToast.retry')}
             </ToastAction>
@@ -135,7 +167,7 @@ function ReceiptDialogContent() {
         setPending(false)
       }
     }
-    upload()
+    process()
   }
 
   const receiptInfoCategory =
@@ -147,25 +179,33 @@ function ReceiptDialogContent() {
     <div className="prose prose-sm dark:prose-invert">
       <p>{t('Dialog.body')}</p>
       <div>
-        <FileInput onChange={handleFileChange} accept="image/jpeg,image/png" />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/heic"
+          capture="environment"
+          className="hidden"
+          onChange={handleFileChange}
+        />
         <div className="grid gap-x-4 gap-y-2 grid-cols-3">
           <Button
             variant="secondary"
-            className="row-span-3 w-full h-full relative"
+            className="row-span-3 w-full h-full relative min-h-[120px]"
             title="Create expense from receipt"
-            onClick={openFileDialog}
+            onClick={() => fileInputRef.current?.click()}
             disabled={pending}
           >
             {pending ? (
               <Loader2 className="w-8 h-8 animate-spin" />
-            ) : receiptInfo ? (
+            ) : previewUrl ? (
               <div className="absolute top-2 left-2 bottom-2 right-2">
                 <Image
-                  src={receiptInfo.url}
-                  width={receiptInfo.width}
-                  height={receiptInfo.height}
+                  src={previewUrl}
+                  width={receiptInfo?.width || 300}
+                  height={receiptInfo?.height || 400}
                   className="w-full h-full m-0 object-contain drop-shadow-lg"
                   alt="Scanned receipt"
+                  unoptimized
                 />
               </div>
             ) : (
@@ -188,7 +228,9 @@ function ReceiptDialogContent() {
                       category={receiptInfoCategory}
                       className="inline w-4 h-4 mr-2"
                     />
-                    <span className="mr-1">{receiptInfoCategory.grouping}</span>
+                    <span className="mr-1">
+                      {receiptInfoCategory.grouping}
+                    </span>
                     <ChevronRight className="inline w-3 h-3 mr-1" />
                     <span>{receiptInfoCategory.name}</span>
                   </div>
@@ -252,11 +294,7 @@ function ReceiptDialogContent() {
                 receiptInfo.amount
               }&categoryId=${receiptInfo.categoryId}&date=${
                 receiptInfo.date
-              }&title=${encodeURIComponent(
-                receiptInfo.title ?? '',
-              )}&imageUrl=${encodeURIComponent(receiptInfo.url)}&imageWidth=${
-                receiptInfo.width
-              }&imageHeight=${receiptInfo.height}`,
+              }&title=${encodeURIComponent(receiptInfo.title ?? '')}`,
             )
           }}
         >
