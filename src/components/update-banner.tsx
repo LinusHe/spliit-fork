@@ -56,7 +56,7 @@ export function UpdateBanner() {
   if (!updateAvailable) return null
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-[100] mx-auto max-w-md">
+    <div className="fixed bottom-20 left-4 right-4 z-[100] mx-auto max-w-md">
       <div className="flex items-center justify-between gap-3 rounded-lg border bg-background p-3 shadow-lg">
         <div className="text-sm">
           <span className="font-medium">Update verfügbar</span>
