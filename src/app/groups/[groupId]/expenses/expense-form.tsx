@@ -1272,7 +1272,7 @@ export function ExpenseForm({
           </Card>
         )}
 
-        <div className="flex mt-4 gap-2">
+        <div className="flex flex-wrap mt-4 gap-2">
           <SubmitButton loadingContent={t(isCreate ? 'creating' : 'saving')}>
             <Save className="w-4 h-4 mr-2" />
             {t(isCreate ? 'create' : 'save')}
