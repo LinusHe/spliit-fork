@@ -261,7 +261,8 @@
       "label": "Wechselkurs",
       "useApi": "Benutze Zinssätze von Frankfurter"
     },
-    "duplicate": "Duplizieren"
+    "duplicate": "Duplizieren",
+    "scanHint": "Tipp: Nutze den Kassenbon-Scanner auf der Ausgaben-Seite"
   },
   "ExpenseDocumentsInput": {
     "TooBigToast": {

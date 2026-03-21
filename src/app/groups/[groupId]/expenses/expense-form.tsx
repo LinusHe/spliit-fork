@@ -54,7 +54,7 @@ import {
 import { AppRouterOutput } from '@/trpc/routers/_app'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { RecurrenceRule } from '@prisma/client'
-import { ChevronRight, Save } from 'lucide-react'
+import { ChevronRight, Copy, Receipt, Save } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -154,6 +154,7 @@ export function ExpenseForm({
   expense,
   onSubmit,
   onDelete,
+  duplicateUrl,
   runtimeFeatureFlags,
 }: {
   group: NonNullable<AppRouterOutput['groups']['get']['group']>
@@ -161,6 +162,7 @@ export function ExpenseForm({
   expense?: AppRouterOutput['groups']['expenses']['get']['expense']
   onSubmit: (value: ExpenseFormValues, participantId?: string) => Promise<void>
   onDelete?: (participantId?: string) => Promise<void>
+  duplicateUrl?: string
   runtimeFeatureFlags: RuntimeFeatureFlags
 }) {
   const t = useTranslations('ExpenseForm')
@@ -447,6 +449,12 @@ export function ExpenseForm({
             <CardTitle>
               {t(`${sExpense}.${isCreate ? 'create' : 'edit'}`)}
             </CardTitle>
+            {isCreate && runtimeFeatureFlags.enableReceiptExtract && (
+              <CardDescription className="flex items-center gap-1.5">
+                <Receipt className="w-3.5 h-3.5" />
+                {t('scanHint')}
+              </CardDescription>
+            )}
           </CardHeader>
           <CardContent className="grid sm:grid-cols-2 gap-6">
             <FormField
@@ -1269,6 +1277,14 @@ export function ExpenseForm({
             <Save className="w-4 h-4 mr-2" />
             {t(isCreate ? 'create' : 'save')}
           </SubmitButton>
+          {!isCreate && duplicateUrl && (
+            <Button variant="outline" asChild>
+              <Link href={duplicateUrl}>
+                <Copy className="w-4 h-4 mr-1.5" />
+                {t('duplicate')}
+              </Link>
+            </Button>
+          )}
           {!isCreate && onDelete && (
             <DeletePopup
               onDelete={() => onDelete(activeUserId ?? undefined)}

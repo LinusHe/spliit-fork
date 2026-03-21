@@ -253,7 +253,8 @@
     "saving": "Saving…",
     "cancel": "Cancel",
     "reimbursement": "Reimbursement",
-    "duplicate": "Duplicate"
+    "duplicate": "Duplicate",
+    "scanHint": "Tip: Use the receipt scanner on the expenses page"
   },
   "ExpenseDocumentsInput": {
     "TooBigToast": {
