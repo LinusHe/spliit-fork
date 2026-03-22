@@ -1,19 +1,26 @@
 'use client'
 
 import { useToast } from '@/components/ui/use-toast'
+import { RuntimeFeatureFlags } from '@/lib/featureFlags'
 import { trpc } from '@/trpc/client'
 import { useTranslations } from 'next-intl'
 import { PropsWithChildren, useEffect } from 'react'
 import { BottomNav } from './bottom-nav'
 import { CurrentGroupProvider } from './current-group-context'
+import { ExpenseDrawerProvider } from './expenses/expense-drawer-context'
+import { ExpenseDrawer } from './expenses/expense-drawer'
 import { GroupHeader } from './group-header'
 import { NotificationPrompt } from './notification-prompt'
 import { SaveGroupLocally } from './save-recent-group'
 
 export function GroupLayoutClient({
   groupId,
+  runtimeFeatureFlags,
   children,
-}: PropsWithChildren<{ groupId: string }>) {
+}: PropsWithChildren<{
+  groupId: string
+  runtimeFeatureFlags: RuntimeFeatureFlags
+}>) {
   const { data, isLoading } = trpc.groups.get.useQuery({ groupId })
   const t = useTranslations('Groups.NotFound')
   const { toast } = useToast()
@@ -44,21 +51,26 @@ export function GroupLayoutClient({
   if (isLoading) {
     return (
       <CurrentGroupProvider {...props}>
-        <GroupHeader />
-        {children}
+        <ExpenseDrawerProvider>
+          <GroupHeader />
+          {children}
+        </ExpenseDrawerProvider>
       </CurrentGroupProvider>
     )
   }
 
   return (
     <CurrentGroupProvider {...props}>
-      <GroupHeader />
-      {children}
-      {/* Bottom padding for the floating nav */}
-      <div className="h-24" />
-      <BottomNav groupId={groupId} />
-      <NotificationPrompt groupId={groupId} />
-      <SaveGroupLocally />
+      <ExpenseDrawerProvider>
+        <GroupHeader />
+        {children}
+        {/* Bottom padding for the floating nav */}
+        <div className="h-24" />
+        <BottomNav groupId={groupId} />
+        <NotificationPrompt groupId={groupId} />
+        <SaveGroupLocally />
+        <ExpenseDrawer runtimeFeatureFlags={runtimeFeatureFlags} />
+      </ExpenseDrawerProvider>
     </CurrentGroupProvider>
   )
 }

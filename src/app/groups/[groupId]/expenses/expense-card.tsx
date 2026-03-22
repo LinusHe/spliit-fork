@@ -9,8 +9,8 @@ import { cn, formatCurrency, formatDateOnly } from '@/lib/utils'
 import { ChevronRight } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { Fragment } from 'react'
+import { useExpenseDrawerOptional } from './expense-drawer-context'
 
 type Expense = Awaited<ReturnType<typeof getGroupExpenses>>[number]
 
@@ -57,8 +57,16 @@ export function ExpenseCard({
   groupId,
   participantCount,
 }: Props) {
-  const router = useRouter()
   const locale = useLocale()
+  const drawerCtx = useExpenseDrawerOptional()
+
+  const handleClick = () => {
+    if (drawerCtx) {
+      drawerCtx.openExpense(expense.id)
+    }
+  }
+
+  const editUrl = `/groups/${groupId}/expenses/${expense.id}/edit`
 
   return (
     <div
@@ -67,9 +75,7 @@ export function ExpenseCard({
         'flex justify-between sm:mx-6 px-4 sm:rounded-lg sm:pr-2 sm:pl-4 py-4 text-sm cursor-pointer hover:bg-accent gap-1 items-stretch',
         expense.isReimbursement && 'italic',
       )}
-      onClick={() => {
-        router.push(`/groups/${groupId}/expenses/${expense.id}/edit`)
-      }}
+      onClick={handleClick}
     >
       <CategoryIcon
         category={expense.category}
@@ -106,11 +112,9 @@ export function ExpenseCard({
         size="icon"
         variant="link"
         className="self-center hidden sm:flex"
-        asChild
+        role="link"
       >
-        <Link href={`/groups/${groupId}/expenses/${expense.id}/edit`}>
-          <ChevronRight className="w-4 h-4" />
-        </Link>
+        <ChevronRight className="w-4 h-4" />
       </Button>
     </div>
   )

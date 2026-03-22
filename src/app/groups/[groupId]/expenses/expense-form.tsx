@@ -155,6 +155,9 @@ export function ExpenseForm({
   onSubmit,
   onDelete,
   duplicateUrl,
+  onDuplicate,
+  onCancel,
+  drawerSearchParams,
   runtimeFeatureFlags,
 }: {
   group: NonNullable<AppRouterOutput['groups']['get']['group']>
@@ -163,12 +166,17 @@ export function ExpenseForm({
   onSubmit: (value: ExpenseFormValues, participantId?: string) => Promise<void>
   onDelete?: (participantId?: string) => Promise<void>
   duplicateUrl?: string
+  onDuplicate?: () => void
+  onCancel?: () => void
+  drawerSearchParams?: URLSearchParams
   runtimeFeatureFlags: RuntimeFeatureFlags
 }) {
   const t = useTranslations('ExpenseForm')
   const locale = useLocale() as Locale
   const isCreate = expense === undefined
-  const searchParams = useSearchParams()
+  const urlSearchParams = useSearchParams()
+  // Use drawer params if provided, otherwise fall back to URL params
+  const searchParams = drawerSearchParams ?? urlSearchParams
 
   const getSelectedPayer = (field?: { value: string }) => {
     if (isCreate && typeof window !== 'undefined') {
@@ -1277,7 +1285,13 @@ export function ExpenseForm({
             <Save className="w-4 h-4 mr-2" />
             {t(isCreate ? 'create' : 'save')}
           </SubmitButton>
-          {!isCreate && duplicateUrl && (
+          {!isCreate && onDuplicate && (
+            <Button variant="outline" type="button" onClick={onDuplicate}>
+              <Copy className="w-4 h-4 mr-1.5" />
+              {t('duplicate')}
+            </Button>
+          )}
+          {!isCreate && !onDuplicate && duplicateUrl && (
             <Button variant="outline" asChild>
               <Link href={duplicateUrl}>
                 <Copy className="w-4 h-4 mr-1.5" />
@@ -1290,9 +1304,15 @@ export function ExpenseForm({
               onDelete={() => onDelete(activeUserId ?? undefined)}
             ></DeletePopup>
           )}
-          <Button variant="ghost" asChild>
-            <Link href={`/groups/${group.id}`}>{t('cancel')}</Link>
-          </Button>
+          {onCancel ? (
+            <Button variant="ghost" type="button" onClick={onCancel}>
+              {t('cancel')}
+            </Button>
+          ) : (
+            <Button variant="ghost" asChild>
+              <Link href={`/groups/${group.id}`}>{t('cancel')}</Link>
+            </Button>
+          )}
         </div>
       </form>
     </Form>

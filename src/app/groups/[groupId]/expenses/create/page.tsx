@@ -1,6 +1,6 @@
-import { CreateExpenseForm } from '@/app/groups/[groupId]/expenses/create-expense-form'
 import { getRuntimeFeatureFlags } from '@/lib/featureFlags'
 import { Metadata } from 'next'
+import { CreateExpenseRedirect } from './create-expense-redirect'
 
 export const metadata: Metadata = {
   title: 'Create Expense',
@@ -12,10 +12,11 @@ export default async function ExpensePage({
   params: Promise<{ groupId: string }>
 }) {
   const { groupId } = await params
+  const runtimeFeatureFlags = await getRuntimeFeatureFlags()
   return (
-    <CreateExpenseForm
+    <CreateExpenseRedirect
       groupId={groupId}
-      runtimeFeatureFlags={await getRuntimeFeatureFlags()}
+      runtimeFeatureFlags={runtimeFeatureFlags}
     />
   )
 }

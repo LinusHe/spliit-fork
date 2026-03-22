@@ -1,13 +1,13 @@
 'use client'
 
 import { CategoryIcon } from '@/app/groups/[groupId]/expenses/category-icon'
+import { useExpenseDrawerOptional } from '@/app/groups/[groupId]/expenses/expense-drawer-context'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useActiveUser } from '@/lib/hooks'
 import { getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import Link from 'next/link'
 import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
@@ -96,13 +96,20 @@ function CategoryExpenseList({
     )
   }
 
+  const drawerCtx = useExpenseDrawerOptional()
+
   return (
     <div className="flex flex-col gap-1 py-2">
       {data.map((expense) => (
-        <Link
+        <button
           key={expense.id}
-          href={`/groups/${groupId}/expenses/${expense.id}/edit`}
-          className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors text-sm"
+          type="button"
+          onClick={() => {
+            if (drawerCtx) {
+              drawerCtx.openExpense(expense.id)
+            }
+          }}
+          className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors text-sm text-left w-full"
         >
           <div className="flex-1 min-w-0">
             <span className="truncate block">{expense.title}</span>
@@ -113,7 +120,7 @@ function CategoryExpenseList({
           <span className="text-sm font-medium ml-3 shrink-0">
             {formatAmount(expense.amount, currencyCode, locale)}
           </span>
-        </Link>
+        </button>
       ))}
     </div>
   )
