@@ -6,7 +6,7 @@
 Deshalb: **Immer mit `docker build --network host` bauen!**
 
 ```bash
-cd /docker/spliit/spliit-fork
+cd /docker/spliit/src
 
 # Build mit Version aus Git
 DOCKER_BUILDKIT=1 docker build --network host --no-cache \

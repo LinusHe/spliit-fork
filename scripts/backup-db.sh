@@ -1,6 +1,7 @@
 #!/bin/bash
 # Spliit DB Backup — keeps last 14 daily dumps
 BACKUP_DIR="/docker/spliit/backups"
+mkdir -p "${BACKUP_DIR}"
 FILENAME="spliit-$(date +%Y%m%d_%H%M%S).sql.gz"
 
 docker exec spliit-db pg_dump -U postgres postgres | gzip > "${BACKUP_DIR}/${FILENAME}"
