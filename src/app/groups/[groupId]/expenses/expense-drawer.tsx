@@ -26,12 +26,14 @@ export function ExpenseDrawer({
       onOpenChange={(open) => {
         if (!open) closeDrawer()
       }}
+      shouldScaleBackground={false}
+      repositionInputs={false}
     >
-      <DrawerContent className="max-h-[92dvh] overflow-hidden">
+      <DrawerContent className="max-h-[85vh] overflow-hidden">
         <DrawerTitle className="sr-only">
           {state.mode === 'edit' ? 'Edit Expense' : 'Create Expense'}
         </DrawerTitle>
-        <div className="overflow-y-auto px-4 pb-8 pt-2">
+        <div className="overflow-y-auto overscroll-contain px-4 pb-8 pt-2">
           {state.mode === 'edit' && (
             <EditExpenseInDrawer
               expenseId={state.expenseId}

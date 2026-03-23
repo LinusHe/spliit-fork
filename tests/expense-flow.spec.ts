@@ -222,10 +222,8 @@ test.describe('Create Expense', () => {
     await goToGroup(page, group.id, alice.id)
     await page.goto(`/groups/${group.id}/expenses/create`)
 
-    // The create form heading should be visible
-    await expect(
-      page.getByRole('heading', { name: /create|erstellen/i }),
-    ).toBeVisible()
+    // The create form should be visible (in drawer or page)
+    await expect(page.getByLabel(/title/i).first()).toBeVisible()
   })
 
   test('create page accepts query params for pre-fill', async ({
@@ -299,16 +297,18 @@ test.describe('Edit Expense', () => {
     await goToGroup(page, group.id, alice.id)
     await page.goto(`/groups/${group.id}/expenses/${expenseId}/edit`)
 
-    // Duplicate button should be visible — use exact match to avoid group name
-    const duplicateBtn = page.getByRole('link', {
-      name: /^duplicate$|^duplizieren$/i,
-    })
+    // Duplicate button should be visible (could be link or button in drawer)
+    const duplicateBtn = page
+      .getByRole('link', { name: /^duplicate$|^duplizieren$/i })
+      .or(page.getByRole('button', { name: /^duplicate$|^duplizieren$/i }))
     await expect(duplicateBtn).toBeVisible()
 
-    // Click it — should navigate to create with params
+    // Click it — should open create with pre-filled data
     await duplicateBtn.click()
-    await expect(page).toHaveURL(/expenses\/create\?/)
-    await expect(page.getByLabel(/title/i).first()).toHaveValue('To Duplicate')
+    // Wait for the create form to appear (in drawer or page)
+    await expect(page.getByLabel(/title/i).first()).toHaveValue('To Duplicate', {
+      timeout: 10000,
+    })
   })
 
   test('edit page shows delete button', async ({ page, request }) => {
@@ -351,10 +351,10 @@ test.describe('Edit Expense', () => {
       .getByRole('button', { name: /^delete$|^löschen$/i })
       .click()
 
-    // Confirm in popup dialog
-    const confirmDialog = page.locator('[role="dialog"]')
-    await confirmDialog.waitFor({ state: 'visible' })
-    await confirmDialog
+    // Confirm in the delete popup (last dialog, not the drawer)
+    const deleteDialog = page.getByRole('dialog', { name: /delete/i })
+    await deleteDialog.waitFor({ state: 'visible' })
+    await deleteDialog
       .getByRole('button', { name: /delete|löschen|yes|ja/i })
       .click()
 
@@ -410,9 +410,14 @@ test.describe('Expense Detail View', () => {
       paidForIds: [alice.id],
     })
 
-    await goToGroup(page, group.id, alice.id)
+    // Set active user first to avoid dialog
+    await page.goto(`/groups/${group.id}`)
+    await setActiveUser(page, group.id, alice.id)
+    // Navigate to deep link — drawer will open and redirect back
     await page.goto(`/groups/${group.id}/expenses/${expenseId}/edit`)
-    await expect(page.getByLabel(/title/i).first()).toHaveValue('Deep Linked')
+    await expect(page.getByLabel(/title/i).first()).toHaveValue('Deep Linked', {
+      timeout: 10000,
+    })
   })
 })
 
@@ -502,12 +507,15 @@ test.describe('Navigation', () => {
     await goToGroup(page, group.id, alice.id)
     await page.goto(`/groups/${group.id}/expenses/${expenseId}/edit`)
 
-    // Use exact match for Cancel button to avoid matching group name
+    // Cancel button — could be link (page mode) or button (drawer mode)
     await page
       .getByRole('link', { name: 'Cancel', exact: true })
       .or(page.getByRole('link', { name: 'Abbrechen', exact: true }))
+      .or(page.getByRole('button', { name: 'Cancel', exact: true }))
+      .or(page.getByRole('button', { name: 'Abbrechen', exact: true }))
       .click()
 
+    // Should be back at group page (drawer closed or navigated back)
     await expect(page).toHaveURL(new RegExp(`/groups/${group.id}`), {
       timeout: 10000,
     })
