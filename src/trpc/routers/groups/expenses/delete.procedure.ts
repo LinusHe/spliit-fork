@@ -1,4 +1,8 @@
 import { deleteExpense, getExpense, getGroup } from '@/lib/api'
+import {
+  getNotificationText,
+  getNotificationTitle,
+} from '@/lib/notification-i18n'
 import { sendPushNotificationsToGroup } from '@/lib/push'
 import { baseProcedure } from '@/trpc/init'
 import { z } from 'zod'
@@ -17,16 +21,22 @@ export const deleteGroupExpenseProcedure = baseProcedure
 
     // Fire-and-forget push notification
     if (existingExpense) {
-      getGroup(groupId).then((group) => {
+      getGroup(groupId).then(async (group) => {
         if (!group) return
         const participantName =
           group.participants.find((p) => p.id === participantId)?.name ??
           'Someone'
-        sendPushNotificationsToGroup(groupId, participantId, {
-          title: 'Expense Deleted',
-          body: `${participantName} deleted: ${existingExpense.title}`,
-          url: `/groups/${groupId}`,
-        }, 'delete').catch(() => {})
+        const title = await getNotificationTitle('expense.deleted.title')
+        const body = await getNotificationText('expense.deleted.body', {
+          name: participantName,
+          title: existingExpense.title,
+        })
+        sendPushNotificationsToGroup(
+          groupId,
+          participantId,
+          { title, body, url: `/groups/${groupId}` },
+          'delete',
+        ).catch(() => {})
       })
     }
 

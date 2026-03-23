@@ -1,5 +1,9 @@
 import { createExpense, getGroup } from '@/lib/api'
 import {
+  getNotificationText,
+  getNotificationTitle,
+} from '@/lib/notification-i18n'
+import {
   formatExpenseAmount,
   sendPushNotificationsToGroup,
 } from '@/lib/push'
@@ -24,7 +28,7 @@ export const createGroupExpenseProcedure = baseProcedure
       )
 
       // Fire-and-forget push notification
-      getGroup(groupId).then((group) => {
+      getGroup(groupId).then(async (group) => {
         if (!group) return
         const participantName =
           group.participants.find((p) => p.id === participantId)?.name ??
@@ -33,11 +37,18 @@ export const createGroupExpenseProcedure = baseProcedure
           expenseFormValues.amount,
           group.currency,
         )
-        sendPushNotificationsToGroup(groupId, participantId, {
-          title: 'New Expense',
-          body: `${participantName} added: ${expenseFormValues.title} (${amountStr})`,
-          url: `/groups/${groupId}`,
-        }, 'create').catch(() => {})
+        const title = await getNotificationTitle('expense.created.title')
+        const body = await getNotificationText('expense.created.body', {
+          name: participantName,
+          title: expenseFormValues.title,
+          amount: amountStr,
+        })
+        sendPushNotificationsToGroup(
+          groupId,
+          participantId,
+          { title, body, url: `/groups/${groupId}` },
+          'create',
+        ).catch(() => {})
       })
 
       return { expenseId: expense.id }

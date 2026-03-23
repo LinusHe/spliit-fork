@@ -1,4 +1,8 @@
 import { getGroup, updateExpense } from '@/lib/api'
+import {
+  getNotificationText,
+  getNotificationTitle,
+} from '@/lib/notification-i18n'
 import { sendPushNotificationsToGroup } from '@/lib/push'
 import { expenseFormSchema } from '@/lib/schemas'
 import { baseProcedure } from '@/trpc/init'
@@ -25,16 +29,22 @@ export const updateGroupExpenseProcedure = baseProcedure
       )
 
       // Fire-and-forget push notification
-      getGroup(groupId).then((group) => {
+      getGroup(groupId).then(async (group) => {
         if (!group) return
         const participantName =
           group.participants.find((p) => p.id === participantId)?.name ??
           'Someone'
-        sendPushNotificationsToGroup(groupId, participantId, {
-          title: 'Expense Updated',
-          body: `${participantName} updated: ${expenseFormValues.title}`,
-          url: `/groups/${groupId}`,
-        }, 'update').catch(() => {})
+        const title = await getNotificationTitle('expense.updated.title')
+        const body = await getNotificationText('expense.updated.body', {
+          name: participantName,
+          title: expenseFormValues.title,
+        })
+        sendPushNotificationsToGroup(
+          groupId,
+          participantId,
+          { title, body, url: `/groups/${groupId}` },
+          'update',
+        ).catch(() => {})
       })
 
       return { expenseId: expense.id }
