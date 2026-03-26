@@ -815,6 +815,7 @@ export function ExpenseForm({
             <div className="sm:order-7">
               <LocationField
                 value={form.watch('locationName')}
+                isCreate={isCreate}
                 onChange={(name, lat, lon) => {
                   form.setValue('locationName', name)
                   if (lat !== undefined) form.setValue('latitude', lat)
