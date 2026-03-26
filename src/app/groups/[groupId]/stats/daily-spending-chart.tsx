@@ -192,14 +192,14 @@ export function DailySpendingChart() {
     <Tabs defaultValue="group">
       <TabsList className="w-full">
         <TabsTrigger value="group" className="flex-1">
-          {t('Categories.group')}
+          {t('Categories.tabGroup')}
         </TabsTrigger>
         <TabsTrigger
           value="mine"
           className="flex-1"
           disabled={!participantId}
         >
-          {t('Categories.mine')}
+          {t('Categories.tabMine')}
         </TabsTrigger>
       </TabsList>
 
