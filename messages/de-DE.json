@@ -262,7 +262,9 @@
       "useApi": "Benutze Zinssätze von Frankfurter"
     },
     "duplicate": "Duplizieren",
-    "scanHint": "Tipp: Nutze den Kassenbon-Scanner auf der Ausgaben-Seite"
+    "scanHint": "Tipp: Nutze den Kassenbon-Scanner auf der Ausgaben-Seite",
+    "locationPlaceholder": "Ort (optional)",
+    "detectLocation": "Standort erkennen"
   },
   "ExpenseDocumentsInput": {
     "TooBigToast": {

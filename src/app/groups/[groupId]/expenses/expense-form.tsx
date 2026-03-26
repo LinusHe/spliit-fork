@@ -56,6 +56,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { RecurrenceRule } from '@prisma/client'
 import { ChevronRight, Copy, Save } from 'lucide-react'
 import { CreateFromReceiptButton } from './create-from-receipt-button'
+import { LocationField } from './location-field'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -217,6 +218,9 @@ export function ExpenseForm({
           isReimbursement: expense.isReimbursement,
           documents: expense.documents,
           notes: expense.notes ?? '',
+          locationName: expense.locationName ?? undefined,
+          latitude: expense.latitude ?? undefined,
+          longitude: expense.longitude ?? undefined,
           recurrenceRule: expense.recurrenceRule ?? undefined,
         }
       : searchParams.get('reimbursement')
@@ -245,6 +249,9 @@ export function ExpenseForm({
           saveDefaultSplittingOptions: false,
           documents: [],
           notes: '',
+          locationName: undefined,
+          latitude: undefined,
+          longitude: undefined,
           recurrenceRule: RecurrenceRule.NONE,
         }
       : {
@@ -276,6 +283,9 @@ export function ExpenseForm({
               ]
             : [],
           notes: '',
+          locationName: undefined,
+          latitude: undefined,
+          longitude: undefined,
           recurrenceRule: RecurrenceRule.NONE,
         },
   })
@@ -802,6 +812,16 @@ export function ExpenseForm({
                 </FormItem>
               )}
             />
+            <div className="sm:order-7">
+              <LocationField
+                value={form.watch('locationName')}
+                onChange={(name, lat, lon) => {
+                  form.setValue('locationName', name)
+                  if (lat !== undefined) form.setValue('latitude', lat)
+                  if (lon !== undefined) form.setValue('longitude', lon)
+                }}
+              />
+            </div>
             <FormField
               control={form.control}
               name="recurrenceRule"

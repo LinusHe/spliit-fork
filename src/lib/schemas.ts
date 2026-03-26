@@ -136,6 +136,9 @@ export const expenseFormSchema = z
       )
       .default([]),
     notes: z.string().optional(),
+    locationName: z.string().optional(),
+    latitude: z.number().optional(),
+    longitude: z.number().optional(),
     recurrenceRule: z
       .enum<RecurrenceRule, [RecurrenceRule, ...RecurrenceRule[]]>(
         Object.values(RecurrenceRule) as any,

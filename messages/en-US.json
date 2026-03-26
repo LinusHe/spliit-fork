@@ -254,7 +254,9 @@
     "cancel": "Cancel",
     "reimbursement": "Reimbursement",
     "duplicate": "Duplicate",
-    "scanHint": "Tip: Use the receipt scanner on the expenses page"
+    "scanHint": "Tip: Use the receipt scanner on the expenses page",
+    "locationPlaceholder": "Location (optional)",
+    "detectLocation": "Detect location"
   },
   "ExpenseDocumentsInput": {
     "TooBigToast": {

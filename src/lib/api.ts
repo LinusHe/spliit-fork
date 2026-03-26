@@ -105,6 +105,9 @@ export async function createExpense(
         },
       },
       notes: expenseFormValues.notes,
+      locationName: expenseFormValues.locationName || null,
+      latitude: expenseFormValues.latitude ?? null,
+      longitude: expenseFormValues.longitude ?? null,
     },
   })
 }
@@ -280,6 +283,9 @@ export async function updateExpense(
           })),
       },
       notes: expenseFormValues.notes,
+      locationName: expenseFormValues.locationName || null,
+      latitude: expenseFormValues.latitude ?? null,
+      longitude: expenseFormValues.longitude ?? null,
     },
   })
 }
@@ -351,6 +357,7 @@ export async function getGroupExpenses(
       expenseDate: true,
       id: true,
       isReimbursement: true,
+      locationName: true,
       paidBy: { select: { id: true, name: true } },
       paidFor: {
         select: {

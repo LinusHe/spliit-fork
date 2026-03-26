@@ -75,6 +75,9 @@ model Expense {
   createdAt        DateTime          @default(now())
   documents        ExpenseDocument[]
   notes            String?
+  locationName     String?
+  latitude         Float?
+  longitude        Float?
 
   recurrenceRule         RecurrenceRule?       @default(NONE)
   recurringExpenseLink   RecurringExpenseLink?

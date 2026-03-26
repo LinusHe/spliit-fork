@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { getGroupExpenses } from '@/lib/api'
 import { Currency } from '@/lib/currency'
 import { cn, formatCurrency, formatDateOnly } from '@/lib/utils'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, MapPin } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { Fragment } from 'react'
@@ -91,6 +91,12 @@ export function ExpenseCard({
         <div className="text-xs text-muted-foreground">
           <ActiveUserBalance {...{ groupId, currency, expense }} />
         </div>
+        {expense.locationName && (
+          <div className="text-xs text-muted-foreground/60 flex items-center gap-1 mt-0.5">
+            <MapPin className="w-3 h-3" />
+            <span className="truncate">{expense.locationName}</span>
+          </div>
+        )}
       </div>
       <div className="flex flex-col justify-between items-end">
         <div
