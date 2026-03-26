@@ -6,18 +6,21 @@ export const getDailySpendingProcedure = baseProcedure
   .input(
     z.object({
       groupId: z.string().min(1),
+      participantId: z.string().optional(),
     }),
   )
-  .query(async ({ input: { groupId } }) => {
+  .query(async ({ input: { groupId, participantId } }) => {
     const expenses = await prisma.expense.findMany({
       select: {
         amount: true,
         expenseDate: true,
         isReimbursement: true,
+        paidBy: { select: { id: true } },
       },
       where: {
         groupId,
         isReimbursement: false,
+        ...(participantId ? { paidById: participantId } : {}),
       },
       orderBy: { expenseDate: 'asc' },
     })
