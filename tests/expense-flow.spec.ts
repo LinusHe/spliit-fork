@@ -205,7 +205,7 @@ test.describe('Create Expense', () => {
     await page.getByRole('option', { name: 'Alice' }).click()
 
     // Submit
-    await page.getByRole('button', { name: /create|erstellen/i }).click()
+    await page.locator('button[type="submit"]').click()
 
     // Should redirect back to group
     await expect(page).toHaveURL(new RegExp(`/groups/${group.id}`), {
@@ -236,7 +236,9 @@ test.describe('Create Expense', () => {
     ])
     const alice = group.participants.find((p) => p.name === 'Alice')!
 
-    await goToGroup(page, group.id, alice.id)
+    // Set active user without reload to avoid redirect race
+    await page.goto(`/groups/${group.id}`)
+    await setActiveUser(page, group.id, alice.id)
     await page.goto(
       `/groups/${group.id}/expenses/create?title=Prefilled&amount=42.50&from=${alice.id}`,
     )
@@ -454,7 +456,7 @@ test.describe('Split Modes', () => {
       ).toBeChecked()
     }
 
-    await page.getByRole('button', { name: /create|erstellen/i }).click()
+    await page.locator('button[type="submit"]').click()
     await expect(page).toHaveURL(new RegExp(`/groups/${group.id}`), {
       timeout: 10000,
     })

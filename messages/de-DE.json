@@ -352,6 +352,15 @@
       "tabGroup": "Gruppe",
       "tabMine": "Meine",
       "selectUser": "Wähle deinen Namen in der Gruppe aus, um deine Ausgaben zu sehen."
+    },
+    "DailySpending": {
+      "title": "Tagesausgaben",
+      "description": "Ausgaben nach Tag aufgeschlüsselt",
+      "empty": "Noch keine Ausgaben.",
+      "days": "Tage",
+      "day": "Tag",
+      "lowToHigh": "Niedrig → Hoch",
+      "average": "Durchschnitt"
     }
   },
   "Activity": {
