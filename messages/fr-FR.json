@@ -319,6 +319,15 @@
       "yourSpendings": "Vos dépenses totales",
       "yourEarnings": "Vos revenus totaux",
       "yourShare": "Votre part totale"
+    },
+    "DailySpending": {
+      "title": "Dépenses quotidiennes",
+      "description": "Répartition des dépenses par jour",
+      "empty": "Aucune dépense.",
+      "days": "jours",
+      "day": "jour",
+      "lowToHigh": "Faible → Élevé",
+      "average": "Moyenne"
     }
   },
   "Activity": {

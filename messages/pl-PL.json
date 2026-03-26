@@ -273,6 +273,15 @@
       "yourSpendings": "Twoje wydatki",
       "yourEarnings": "Twoje wpływy",
       "yourShare": "Twoje udziały"
+    },
+    "DailySpending": {
+      "title": "Wydatki dzienne",
+      "description": "Wydatki w podziale na dni",
+      "empty": "Brak wydatków.",
+      "days": "dni",
+      "day": "dzień",
+      "lowToHigh": "Niskie → Wysokie",
+      "average": "Średnia"
     }
   },
   "Activity": {

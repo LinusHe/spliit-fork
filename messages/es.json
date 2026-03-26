@@ -311,6 +311,15 @@
       "yourSpendings": "Tus gastos totales",
       "yourEarnings": "Tus ingresos totales",
       "yourShare": "Tu parte final"
+    },
+    "DailySpending": {
+      "title": "Gastos diarios",
+      "description": "Desglose de gastos por día",
+      "empty": "Sin gastos.",
+      "days": "días",
+      "day": "día",
+      "lowToHigh": "Bajo → Alto",
+      "average": "Promedio"
     }
   },
   "Activity": {

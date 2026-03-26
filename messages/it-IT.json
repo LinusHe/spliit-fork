@@ -287,6 +287,15 @@
       "yourSpendings": "Le tue spese totali",
       "yourEarnings": "I tuoi guadagni totali",
       "yourShare": "La tua quota totale"
+    },
+    "DailySpending": {
+      "title": "Spese giornaliere",
+      "description": "Suddivisione spese per giorno",
+      "empty": "Nessuna spesa.",
+      "days": "giorni",
+      "day": "giorno",
+      "lowToHigh": "Basso → Alto",
+      "average": "Media"
     }
   },
   "Activity": {

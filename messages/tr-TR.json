@@ -264,6 +264,15 @@
       "yourSpendings": "Sizin toplam harcamalarınız",
       "yourEarnings": "Sizin toplam gelirleriniz",
       "yourShare": "Sizin toplam payınız"
+    },
+    "DailySpending": {
+      "title": "Günlük harcamalar",
+      "description": "Güne göre harcama dağılımı",
+      "empty": "Henüz harcama yok.",
+      "days": "gün",
+      "day": "gün",
+      "lowToHigh": "Düşük → Yüksek",
+      "average": "Ortalama"
     }
   },
   "Activity": {

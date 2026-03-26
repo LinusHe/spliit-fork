@@ -290,6 +290,15 @@
       "yourSpendings": "Seus gastos totais",
       "yourEarnings": "Suas receitas totais",
       "yourShare": "Sua participação total"
+    },
+    "DailySpending": {
+      "title": "Gastos diários",
+      "description": "Divisão de gastos por dia",
+      "empty": "Sem gastos.",
+      "days": "dias",
+      "day": "dia",
+      "lowToHigh": "Baixo → Alto",
+      "average": "Média"
     }
   },
   "Activity": {

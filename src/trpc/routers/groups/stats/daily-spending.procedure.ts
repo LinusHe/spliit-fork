@@ -15,25 +15,62 @@ export const getDailySpendingProcedure = baseProcedure
         amount: true,
         expenseDate: true,
         isReimbursement: true,
-        paidBy: { select: { id: true } },
+        splitMode: true,
+        paidFor: {
+          select: {
+            participant: { select: { id: true } },
+            shares: true,
+          },
+        },
       },
       where: {
         groupId,
         isReimbursement: false,
-        ...(participantId ? { paidById: participantId } : {}),
       },
       orderBy: { expenseDate: 'asc' },
     })
 
-    // Group by date
+    // Group by date, calculating participant share if filtered
     const dailyMap = new Map<string, number>()
+
     for (const exp of expenses) {
       const dateKey = exp.expenseDate.toISOString().slice(0, 10)
-      dailyMap.set(dateKey, (dailyMap.get(dateKey) ?? 0) + exp.amount)
+      let amount: number
+
+      if (participantId) {
+        // Calculate this participant's share (same logic as category stats)
+        const paidForEntry = exp.paidFor.find(
+          (pf) => pf.participant.id === participantId,
+        )
+        if (!paidForEntry) continue
+
+        const totalShares = exp.paidFor.reduce(
+          (sum, pf) => sum + (pf.shares ?? 0),
+          0,
+        )
+
+        if (exp.splitMode === 'EVENLY') {
+          amount = exp.amount / exp.paidFor.length
+        } else if (exp.splitMode === 'BY_SHARES' && totalShares > 0) {
+          amount =
+            (exp.amount * (paidForEntry.shares ?? 0)) / totalShares
+        } else if (exp.splitMode === 'BY_AMOUNT') {
+          amount = paidForEntry.shares ?? 0
+        } else if (exp.splitMode === 'BY_PERCENTAGE' && totalShares > 0) {
+          amount =
+            (exp.amount * (paidForEntry.shares ?? 0)) / totalShares
+        } else {
+          amount = exp.amount / exp.paidFor.length
+        }
+      } else {
+        amount = exp.amount
+      }
+
+      dailyMap.set(dateKey, (dailyMap.get(dateKey) ?? 0) + amount)
     }
 
     const days = Array.from(dailyMap.entries())
-      .map(([date, total]) => ({ date, total }))
+      .map(([date, total]) => ({ date, total: Math.round(total) }))
       .sort((a, b) => a.date.localeCompare(b.date))
 
     return { days }

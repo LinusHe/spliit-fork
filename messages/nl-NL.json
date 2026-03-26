@@ -319,6 +319,15 @@
       "yourSpendings": "Jouw totale uitgaven",
       "yourEarnings": "Jouw totale inkomsten",
       "yourShare": "Jouw totale aandeel"
+    },
+    "DailySpending": {
+      "title": "Dagelijkse uitgaven",
+      "description": "Uitgaven per dag",
+      "empty": "Nog geen uitgaven.",
+      "days": "dagen",
+      "day": "dag",
+      "lowToHigh": "Laag → Hoog",
+      "average": "Gemiddelde"
     }
   },
   "Activity": {

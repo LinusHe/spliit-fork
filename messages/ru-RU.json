@@ -265,6 +265,15 @@
       "yourSpendings": "Всего потрачено вами",
       "yourEarnings": "Всего заработано вами",
       "yourShare": "Ваша суммарная доля"
+    },
+    "DailySpending": {
+      "title": "Ежедневные расходы",
+      "description": "Расходы по дням",
+      "empty": "Нет расходов.",
+      "days": "дней",
+      "day": "день",
+      "lowToHigh": "Мало → Много",
+      "average": "Среднее"
     }
   },
   "Activity": {
