@@ -7,7 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
 import dayjs, { type Dayjs } from 'dayjs'
-import { useTranslations } from 'next-intl'
+import 'dayjs/locale/de'
+import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { forwardRef, useEffect, useMemo, useState } from 'react'
 import { useInView } from 'react-intersection-observer'
@@ -97,6 +98,31 @@ export function ExpenseList() {
   )
 }
 
+function DateDivider({ date, locale }: { date: string; locale: string }) {
+  const d = dayjs(date).locale(locale)
+  const isToday = d.isSame(dayjs(), 'day')
+  const isYesterday = d.isSame(dayjs().subtract(1, 'day'), 'day')
+
+  let label: string
+  if (isToday) {
+    label = locale.startsWith('de') ? 'Heute' : 'Today'
+  } else if (isYesterday) {
+    label = locale.startsWith('de') ? 'Gestern' : 'Yesterday'
+  } else {
+    label = d.format('dd, D. MMMM')
+  }
+
+  return (
+    <div className="flex items-center gap-3 px-4 sm:px-6 py-1.5">
+      <div className="flex-1 h-px bg-border" />
+      <span className="text-[11px] text-muted-foreground/60 font-medium tracking-wide">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-border" />
+    </div>
+  )
+}
+
 const ExpenseListForSearch = ({
   groupId,
   searchText,
@@ -106,6 +132,7 @@ const ExpenseListForSearch = ({
 }) => {
   const utils = trpc.useUtils()
   const { group } = useCurrentGroup()
+  const locale = useLocale()
 
   useEffect(() => {
     // Until we use tRPC more widely and can invalidate the cache on expense
@@ -167,15 +194,30 @@ const ExpenseListForSearch = ({
             >
               {t(`Groups.${expenseGroup}`)}
             </div>
-            {groupExpenses.map((expense) => (
-              <ExpenseCard
-                key={expense.id}
-                expense={expense}
-                currency={getCurrencyFromGroup(group)}
-                groupId={groupId}
-                participantCount={group.participants.length}
-              />
-            ))}
+            {groupExpenses.map((expense, idx) => {
+              const dateKey = dayjs(expense.expenseDate).format('YYYY-MM-DD')
+              const prevDateKey =
+                idx > 0
+                  ? dayjs(groupExpenses[idx - 1].expenseDate).format(
+                      'YYYY-MM-DD',
+                    )
+                  : null
+              const showDivider = idx === 0 || dateKey !== prevDateKey
+
+              return (
+                <div key={expense.id}>
+                  {showDivider && (
+                    <DateDivider date={dateKey} locale={locale} />
+                  )}
+                  <ExpenseCard
+                    expense={expense}
+                    currency={getCurrencyFromGroup(group)}
+                    groupId={groupId}
+                    participantCount={group.participants.length}
+                  />
+                </div>
+              )
+            })}
           </div>
         )
       })}
