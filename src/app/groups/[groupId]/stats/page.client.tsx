@@ -27,6 +27,16 @@ export function TotalsPageClient() {
 
       <Card className="mb-4">
         <CardHeader>
+          <CardTitle>{t('Categories.title')}</CardTitle>
+          <CardDescription>{t('Categories.description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CategoryBreakdown />
+        </CardContent>
+      </Card>
+
+      <Card className="mb-4">
+        <CardHeader>
           <CardTitle>{t('DailySpending.title')}</CardTitle>
           <CardDescription>
             {t('DailySpending.description')}
@@ -34,16 +44,6 @@ export function TotalsPageClient() {
         </CardHeader>
         <CardContent>
           <DailySpendingChart />
-        </CardContent>
-      </Card>
-
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>{t('Categories.title')}</CardTitle>
-          <CardDescription>{t('Categories.description')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <CategoryBreakdown />
         </CardContent>
       </Card>
     </>
