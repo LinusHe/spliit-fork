@@ -623,7 +623,9 @@ test.describe('Balances', () => {
       paidForIds: [alice.id, bob.id],
     })
 
-    await goToGroup(page, group.id, alice.id)
+    await page.goto(`/groups/${group.id}`)
+    await setActiveUser(page, group.id, alice.id)
+    await page.goto(`/groups/${group.id}`)
     const balancesTab = page.getByRole('tab', { name: /balances|salden/i })
     if (await balancesTab.isVisible()) {
       await balancesTab.click()

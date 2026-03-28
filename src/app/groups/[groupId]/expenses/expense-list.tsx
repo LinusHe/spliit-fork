@@ -4,6 +4,10 @@ import { getGroupExpensesAction } from '@/app/groups/[groupId]/expenses/expense-
 import { Button } from '@/components/ui/button'
 import { SearchBar } from '@/components/ui/search-bar'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  ExpenseFilterDrawer,
+  type ExpenseFilters,
+} from './expense-filters'
 import { getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
 import dayjs, { type Dayjs } from 'dayjs'
@@ -63,6 +67,7 @@ export function ExpenseList() {
   const { groupId, group } = useCurrentGroup()
   const [searchText, setSearchText] = useState('')
   const [debouncedSearchText] = useDebounce(searchText, 300)
+  const [filters, setFilters] = useState<ExpenseFilters>({})
 
   const participants = group?.participants
 
@@ -89,10 +94,19 @@ export function ExpenseList() {
 
   return (
     <>
-      <SearchBar onValueChange={(value) => setSearchText(value)} />
+      <div className="flex items-center gap-2 mx-4 sm:mx-6">
+        <div className="flex-1">
+          <SearchBar
+            onValueChange={(value) => setSearchText(value)}
+            className="!mx-0"
+          />
+        </div>
+        <ExpenseFilterDrawer filters={filters} onChange={setFilters} />
+      </div>
       <ExpenseListForSearch
         groupId={groupId}
         searchText={debouncedSearchText}
+        filters={filters}
       />
     </>
   )
@@ -126,9 +140,11 @@ function DateDivider({ date, locale }: { date: string; locale: string }) {
 const ExpenseListForSearch = ({
   groupId,
   searchText,
+  filters,
 }: {
   groupId: string
   searchText: string
+  filters: ExpenseFilters
 }) => {
   const utils = trpc.useUtils()
   const { group } = useCurrentGroup()
@@ -148,7 +164,16 @@ const ExpenseListForSearch = ({
     isLoading: expensesAreLoading,
     fetchNextPage,
   } = trpc.groups.expenses.list.useInfiniteQuery(
-    { groupId, limit: PAGE_SIZE, filter: searchText },
+    {
+      groupId,
+      limit: PAGE_SIZE,
+      filter: searchText || undefined,
+      categoryId: filters.categoryId,
+      locationName: filters.locationName,
+      minAmount: filters.minAmount,
+      maxAmount: filters.maxAmount,
+      participantId: filters.participantId,
+    },
     { getNextPageParam: ({ nextCursor }) => nextCursor },
   )
   const expenses = data?.pages.flatMap((page) => page.expenses)

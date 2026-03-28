@@ -39,7 +39,15 @@
       "lastYear": "Letztes Jahr",
       "older": "Älter"
     },
-    "export": "Exportieren"
+    "export": "Exportieren",
+    "filters": "Filter",
+    "filterCategory": "Kategorie",
+    "filterLocation": "Ort",
+    "filterAmount": "Betrag",
+    "filterParticipant": "Teilnehmer",
+    "filterAll": "Alle",
+    "filterApply": "Filter anwenden",
+    "filterClear": "Zurücksetzen"
   },
   "ExpenseCard": {
     "paidBy": "Gezahlt von <strong>{paidBy}</strong> für <paidFor></paidFor>",

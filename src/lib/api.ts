@@ -345,9 +345,49 @@ export async function getCategories() {
 
 export async function getGroupExpenses(
   groupId: string,
-  options?: { offset?: number; length?: number; filter?: string },
+  options?: {
+    offset?: number
+    length?: number
+    filter?: string
+    categoryId?: number
+    locationName?: string
+    minAmount?: number
+    maxAmount?: number
+    participantId?: string
+  },
 ) {
   await createRecurringExpenses()
+
+  const textFilter = options?.filter
+  const where: any = { groupId }
+
+  // Freitext search: match title, locationName, category name, or paidBy name
+  if (textFilter) {
+    where.OR = [
+      { title: { contains: textFilter, mode: 'insensitive' } },
+      { locationName: { contains: textFilter, mode: 'insensitive' } },
+      { category: { name: { contains: textFilter, mode: 'insensitive' } } },
+      { paidBy: { name: { contains: textFilter, mode: 'insensitive' } } },
+    ]
+  }
+
+  // Structured filters
+  if (options?.categoryId !== undefined) {
+    where.categoryId = options.categoryId
+  }
+  if (options?.locationName) {
+    where.locationName = { contains: options.locationName, mode: 'insensitive' }
+  }
+  if (options?.minAmount !== undefined || options?.maxAmount !== undefined) {
+    where.amount = {}
+    if (options?.minAmount !== undefined) where.amount.gte = options.minAmount
+    if (options?.maxAmount !== undefined) where.amount.lte = options.maxAmount
+  }
+  if (options?.participantId) {
+    where.paidFor = {
+      some: { participantId: options.participantId },
+    }
+  }
 
   return prisma.expense.findMany({
     select: {
@@ -370,12 +410,7 @@ export async function getGroupExpenses(
       title: true,
       _count: { select: { documents: true } },
     },
-    where: {
-      groupId,
-      title: options?.filter
-        ? { contains: options.filter, mode: 'insensitive' }
-        : undefined,
-    },
+    where,
     orderBy: [{ expenseDate: 'desc' }, { createdAt: 'desc' }],
     skip: options && options.offset,
     take: options && options.length,

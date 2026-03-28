@@ -39,7 +39,15 @@
       "earlierThisYear": "Earlier this year",
       "lastYear": "Last year",
       "older": "Older"
-    }
+    },
+    "filters": "Filters",
+    "filterCategory": "Category",
+    "filterLocation": "Location",
+    "filterAmount": "Amount range",
+    "filterParticipant": "Participant",
+    "filterAll": "All",
+    "filterApply": "Apply filters",
+    "filterClear": "Clear"
   },
   "ExpenseCard": {
     "paidBy": "Paid by <strong>{paidBy}</strong> for <paidFor></paidFor>",
