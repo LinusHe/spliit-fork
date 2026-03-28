@@ -47,7 +47,8 @@
     "filterParticipant": "Participant",
     "filterAll": "All",
     "filterApply": "Apply filters",
-    "filterClear": "Clear"
+    "filterClear": "Clear",
+    "noResults": "No expenses match your search or filters."
   },
   "ExpenseCard": {
     "paidBy": "Paid by <strong>{paidBy}</strong> for <paidFor></paidFor>",

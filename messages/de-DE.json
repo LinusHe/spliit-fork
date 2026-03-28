@@ -47,7 +47,8 @@
     "filterParticipant": "Teilnehmer",
     "filterAll": "Alle",
     "filterApply": "Filter anwenden",
-    "filterClear": "Zurücksetzen"
+    "filterClear": "Zurücksetzen",
+    "noResults": "Keine Ausgaben gefunden. Versuch andere Suchbegriffe oder Filter."
   },
   "ExpenseCard": {
     "paidBy": "Gezahlt von <strong>{paidBy}</strong> für <paidFor></paidFor>",

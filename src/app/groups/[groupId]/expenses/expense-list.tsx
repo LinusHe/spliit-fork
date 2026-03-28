@@ -168,7 +168,7 @@ const ExpenseListForSearch = ({
       groupId,
       limit: PAGE_SIZE,
       filter: searchText || undefined,
-      categoryId: filters.categoryId,
+      categoryGrouping: filters.categoryGrouping,
       locationName: filters.locationName,
       minAmount: filters.minAmount,
       maxAmount: filters.maxAmount,
@@ -192,15 +192,29 @@ const ExpenseListForSearch = ({
 
   if (isLoading) return <ExpensesLoading />
 
+  const hasActiveFilters =
+    !!searchText ||
+    filters.categoryGrouping !== undefined ||
+    filters.locationName !== undefined ||
+    filters.minAmount !== undefined ||
+    filters.maxAmount !== undefined ||
+    filters.participantId !== undefined
+
   if (expenses.length === 0)
     return (
-      <p className="px-6 text-sm py-6">
-        {t('noExpenses')}{' '}
-        <Button variant="link" asChild className="-m-4">
-          <Link href={`/groups/${groupId}/expenses/create`}>
-            {t('createFirst')}
-          </Link>
-        </Button>
+      <p className="px-6 text-sm py-6 text-muted-foreground">
+        {hasActiveFilters ? (
+          t('noResults')
+        ) : (
+          <>
+            {t('noExpenses')}{' '}
+            <Button variant="link" asChild className="-m-4">
+              <Link href={`/groups/${groupId}/expenses/create`}>
+                {t('createFirst')}
+              </Link>
+            </Button>
+          </>
+        )}
       </p>
     )
 

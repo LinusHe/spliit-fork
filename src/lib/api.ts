@@ -349,7 +349,7 @@ export async function getGroupExpenses(
     offset?: number
     length?: number
     filter?: string
-    categoryId?: number
+    categoryGrouping?: string
     locationName?: string
     minAmount?: number
     maxAmount?: number
@@ -372,8 +372,8 @@ export async function getGroupExpenses(
   }
 
   // Structured filters
-  if (options?.categoryId !== undefined) {
-    where.categoryId = options.categoryId
+  if (options?.categoryGrouping) {
+    where.category = { grouping: options.categoryGrouping }
   }
   if (options?.locationName) {
     where.locationName = { contains: options.locationName, mode: 'insensitive' }
