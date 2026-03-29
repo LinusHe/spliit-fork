@@ -349,11 +349,13 @@ export async function getGroupExpenses(
     offset?: number
     length?: number
     filter?: string
-    categoryGrouping?: string
+    categoryIds?: number[]
     locationName?: string
     minAmount?: number
     maxAmount?: number
     participantId?: string
+    dateFrom?: Date
+    dateTo?: Date
   },
 ) {
   await createRecurringExpenses()
@@ -361,19 +363,50 @@ export async function getGroupExpenses(
   const textFilter = options?.filter
   const where: any = { groupId }
 
-  // Freitext search: match title, locationName, category name, or paidBy name
+  // Freitext search: match title, locationName, category name, paidBy name, or date
   if (textFilter) {
-    where.OR = [
+    const orConditions: any[] = [
       { title: { contains: textFilter, mode: 'insensitive' } },
       { locationName: { contains: textFilter, mode: 'insensitive' } },
       { category: { name: { contains: textFilter, mode: 'insensitive' } } },
       { paidBy: { name: { contains: textFilter, mode: 'insensitive' } } },
     ]
+
+    // Try to parse date from text (DD.MM.YYYY, DD.MM.YY, DD.MM., DD.M.)
+    const dateMatch = textFilter.match(
+      /^(\d{1,2})\.(\d{1,2})\.(\d{2,4})?$/,
+    )
+    if (dateMatch) {
+      const day = parseInt(dateMatch[1], 10)
+      const month = parseInt(dateMatch[2], 10)
+      const yearStr = dateMatch[3]
+      if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+        if (yearStr) {
+          const year =
+            yearStr.length === 2 ? 2000 + parseInt(yearStr, 10) : parseInt(yearStr, 10)
+          const d = new Date(year, month - 1, day)
+          const next = new Date(year, month - 1, day + 1)
+          orConditions.push({
+            expenseDate: { gte: d, lt: next },
+          })
+        } else {
+          // No year → match in current year
+          const year = new Date().getFullYear()
+          const d = new Date(year, month - 1, day)
+          const next = new Date(year, month - 1, day + 1)
+          orConditions.push({
+            expenseDate: { gte: d, lt: next },
+          })
+        }
+      }
+    }
+
+    where.OR = orConditions
   }
 
   // Structured filters
-  if (options?.categoryGrouping) {
-    where.category = { grouping: options.categoryGrouping }
+  if (options?.categoryIds && options.categoryIds.length > 0) {
+    where.categoryId = { in: options.categoryIds }
   }
   if (options?.locationName) {
     where.locationName = { contains: options.locationName, mode: 'insensitive' }
@@ -387,6 +420,11 @@ export async function getGroupExpenses(
     where.paidFor = {
       some: { participantId: options.participantId },
     }
+  }
+  if (options?.dateFrom || options?.dateTo) {
+    where.expenseDate = {}
+    if (options?.dateFrom) where.expenseDate.gte = options.dateFrom
+    if (options?.dateTo) where.expenseDate.lte = options.dateTo
   }
 
   return prisma.expense.findMany({

@@ -168,11 +168,13 @@ const ExpenseListForSearch = ({
       groupId,
       limit: PAGE_SIZE,
       filter: searchText || undefined,
-      categoryGrouping: filters.categoryGrouping,
+      categoryIds: filters.categoryIds,
       locationName: filters.locationName,
       minAmount: filters.minAmount,
       maxAmount: filters.maxAmount,
       participantId: filters.participantId,
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
     },
     { getNextPageParam: ({ nextCursor }) => nextCursor },
   )
@@ -194,11 +196,13 @@ const ExpenseListForSearch = ({
 
   const hasActiveFilters =
     !!searchText ||
-    filters.categoryGrouping !== undefined ||
+    (filters.categoryIds && filters.categoryIds.length > 0) ||
     filters.locationName !== undefined ||
     filters.minAmount !== undefined ||
     filters.maxAmount !== undefined ||
-    filters.participantId !== undefined
+    filters.participantId !== undefined ||
+    filters.dateFrom !== undefined ||
+    filters.dateTo !== undefined
 
   if (expenses.length === 0)
     return (

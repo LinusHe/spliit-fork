@@ -48,7 +48,9 @@
     "filterAll": "All",
     "filterApply": "Apply filters",
     "filterClear": "Clear",
-    "noResults": "No expenses match your search or filters."
+    "noResults": "No expenses match your search or filters.",
+    "filterAddCategory": "Add category...",
+    "filterDate": "Date range"
   },
   "ExpenseCard": {
     "paidBy": "Paid by <strong>{paidBy}</strong> for <paidFor></paidFor>",

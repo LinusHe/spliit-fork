@@ -1,6 +1,14 @@
 'use client'
 
+import { CategoryIcon } from '@/app/groups/[groupId]/expenses/category-icon'
 import { Button } from '@/components/ui/button'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command'
 import {
   Drawer,
   DrawerClose,
@@ -10,17 +18,29 @@ import {
 } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
 import { trpc } from '@/trpc/client'
-import { MapPin, SlidersHorizontal, Tag, Users, X, Wallet } from 'lucide-react'
+import { Category } from '@prisma/client'
+import {
+  Calendar,
+  ChevronDown,
+  MapPin,
+  SlidersHorizontal,
+  Tag,
+  Users,
+  Wallet,
+  X,
+} from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useCurrentGroup } from '../current-group-context'
 
 export interface ExpenseFilters {
-  categoryGrouping?: string
+  categoryIds?: number[]
   locationName?: string
   minAmount?: number
   maxAmount?: number
   participantId?: string
+  dateFrom?: string // ISO date string
+  dateTo?: string // ISO date string
 }
 
 interface Props {
@@ -28,33 +48,43 @@ interface Props {
   onChange: (filters: ExpenseFilters) => void
 }
 
+// Count active filters (arrays count as 1 if non-empty)
+function countActiveFilters(f: ExpenseFilters): number {
+  let n = 0
+  if (f.categoryIds && f.categoryIds.length > 0) n++
+  if (f.locationName) n++
+  if (f.minAmount !== undefined) n++
+  if (f.maxAmount !== undefined) n++
+  if (f.participantId) n++
+  if (f.dateFrom) n++
+  if (f.dateTo) n++
+  return n
+}
+
 export function ExpenseFilterDrawer({ filters, onChange }: Props) {
   const { groupId, group } = useCurrentGroup()
   const t = useTranslations('Expenses')
+  const tCat = useTranslations('Categories')
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<ExpenseFilters>(filters)
+  const [catPickerOpen, setCatPickerOpen] = useState(false)
 
   useEffect(() => {
     setDraft(filters)
   }, [filters])
 
   const { data: categoriesData } = trpc.categories.list.useQuery()
+  const categories = categoriesData?.categories ?? []
 
-  // Group categories by grouping name
-  const categoryGroups = useMemo(() => {
-    if (!categoriesData?.categories) return []
-    const seen = new Set<string>()
-    const groups: string[] = []
-    for (const cat of categoriesData.categories) {
-      if (!seen.has(cat.grouping)) {
-        seen.add(cat.grouping)
-        groups.push(cat.grouping)
-      }
-    }
-    return groups
-  }, [categoriesData])
+  // Categories grouped
+  const categoriesByGroup = useMemo(() => {
+    return categories.reduce<Record<string, Category[]>>((acc, cat) => {
+      acc[cat.grouping] = [...(acc[cat.grouping] ?? []), cat]
+      return acc
+    }, {})
+  }, [categories])
 
-  // Get unique locations from expenses
+  // Get unique locations
   const { data: allExpenses } = trpc.groups.expenses.list.useInfiniteQuery(
     { groupId, limit: 500 },
     { getNextPageParam: ({ nextCursor }) => nextCursor },
@@ -71,9 +101,41 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
     return Array.from(locs).sort()
   }, [allExpenses])
 
-  const activeFilterCount = Object.values(filters).filter(
-    (v) => v !== undefined,
-  ).length
+  // Date range defaults from expenses
+  const { firstDate, lastDate } = useMemo(() => {
+    if (!allExpenses) return { firstDate: '', lastDate: '' }
+    let min = ''
+    let max = ''
+    for (const page of allExpenses.pages) {
+      for (const exp of page.expenses) {
+        const d = new Date(exp.expenseDate).toISOString().slice(0, 10)
+        if (!min || d < min) min = d
+        if (!max || d > max) max = d
+      }
+    }
+    return { firstDate: min, lastDate: max }
+  }, [allExpenses])
+
+  const activeFilterCount = countActiveFilters(filters)
+
+  const addCategory = useCallback(
+    (id: number) => {
+      setDraft((d) => {
+        const existing = d.categoryIds ?? []
+        if (existing.includes(id)) return d
+        return { ...d, categoryIds: [...existing, id] }
+      })
+      setCatPickerOpen(false)
+    },
+    [],
+  )
+
+  const removeCategory = useCallback((id: number) => {
+    setDraft((d) => {
+      const next = (d.categoryIds ?? []).filter((cid) => cid !== id)
+      return { ...d, categoryIds: next.length > 0 ? next : undefined }
+    })
+  }, [])
 
   const apply = () => {
     onChange(draft)
@@ -86,6 +148,13 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
     onChange(empty)
     setOpen(false)
   }
+
+  const selectedCategories = useMemo(() => {
+    if (!draft.categoryIds) return []
+    return draft.categoryIds
+      .map((id) => categories.find((c) => c.id === id))
+      .filter(Boolean) as Category[]
+  }, [draft.categoryIds, categories])
 
   return (
     <Drawer open={open} onOpenChange={setOpen} shouldScaleBackground={false}>
@@ -116,7 +185,7 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
           </div>
 
           <div className="space-y-6">
-            {/* Category filter — grouped */}
+            {/* Category filter */}
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Tag className="w-4 h-4 text-muted-foreground" />
@@ -124,44 +193,133 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
                   {t('filterCategory')}
                 </label>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant={
-                    draft.categoryGrouping === undefined
-                      ? 'default'
-                      : 'outline'
+
+              {/* Selected category chips */}
+              {selectedCategories.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {selectedCategories.map((cat) => (
+                    <span
+                      key={cat.id}
+                      className="inline-flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-medium pl-2 pr-1 py-1 rounded-full"
+                    >
+                      <CategoryIcon
+                        category={cat}
+                        className="w-3.5 h-3.5"
+                      />
+                      {tCat(`${cat.grouping}.${cat.name}`)}
+                      <button
+                        type="button"
+                        onClick={() => removeCategory(cat.id)}
+                        className="hover:bg-primary/20 rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Category picker toggle */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full justify-between"
+                onClick={() => setCatPickerOpen(!catPickerOpen)}
+              >
+                <span className="text-muted-foreground text-sm">
+                  {t('filterAddCategory')}
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${catPickerOpen ? 'rotate-180' : ''}`}
+                />
+              </Button>
+
+              {catPickerOpen && (
+                <div className="border rounded-md mt-2 overflow-hidden">
+                  <Command>
+                    <CommandInput
+                      placeholder={tCat('search')}
+                      className="text-base"
+                    />
+                    <CommandEmpty>{tCat('noCategory')}</CommandEmpty>
+                    <div className="max-h-[200px] overflow-y-auto">
+                      {Object.entries(categoriesByGroup).map(
+                        ([group, cats]) => (
+                          <CommandGroup
+                            key={group}
+                            heading={tCat(`${group}.heading`)}
+                          >
+                            {cats.map((cat) => {
+                              const isSelected = (
+                                draft.categoryIds ?? []
+                              ).includes(cat.id)
+                              return (
+                                <CommandItem
+                                  key={cat.id}
+                                  value={`${cat.id} ${tCat(`${cat.grouping}.heading`)} ${tCat(`${cat.grouping}.${cat.name}`)}`}
+                                  onSelect={() => {
+                                    if (isSelected) {
+                                      removeCategory(cat.id)
+                                    } else {
+                                      addCategory(cat.id)
+                                    }
+                                  }}
+                                  className={
+                                    isSelected ? 'opacity-50' : ''
+                                  }
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <CategoryIcon
+                                      category={cat}
+                                      className="w-4 h-4"
+                                    />
+                                    {tCat(`${cat.grouping}.${cat.name}`)}
+                                  </div>
+                                </CommandItem>
+                              )
+                            })}
+                          </CommandGroup>
+                        ),
+                      )}
+                    </div>
+                  </Command>
+                </div>
+              )}
+            </div>
+
+            {/* Date range filter */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <label className="text-sm font-medium">
+                  {t('filterDate')}
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  className="text-base flex-1"
+                  value={draft.dateFrom ?? firstDate}
+                  onChange={(e) =>
+                    setDraft((d) => ({
+                      ...d,
+                      dateFrom: e.target.value || undefined,
+                    }))
                   }
-                  size="sm"
-                  onClick={() =>
-                    setDraft((d) => ({ ...d, categoryGrouping: undefined }))
+                />
+                <span className="text-muted-foreground text-sm">–</span>
+                <Input
+                  type="date"
+                  className="text-base flex-1"
+                  value={draft.dateTo ?? lastDate}
+                  onChange={(e) =>
+                    setDraft((d) => ({
+                      ...d,
+                      dateTo: e.target.value || undefined,
+                    }))
                   }
-                >
-                  {t('filterAll')}
-                </Button>
-                {categoryGroups.map((grouping) => (
-                  <Button
-                    key={grouping}
-                    type="button"
-                    variant={
-                      draft.categoryGrouping === grouping
-                        ? 'default'
-                        : 'outline'
-                    }
-                    size="sm"
-                    onClick={() =>
-                      setDraft((d) => ({
-                        ...d,
-                        categoryGrouping:
-                          d.categoryGrouping === grouping
-                            ? undefined
-                            : grouping,
-                      }))
-                    }
-                  >
-                    {grouping}
-                  </Button>
-                ))}
+                />
               </div>
             </div>
 

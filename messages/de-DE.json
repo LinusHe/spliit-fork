@@ -48,7 +48,9 @@
     "filterAll": "Alle",
     "filterApply": "Filter anwenden",
     "filterClear": "Zurücksetzen",
-    "noResults": "Keine Ausgaben gefunden. Versuch andere Suchbegriffe oder Filter."
+    "noResults": "Keine Ausgaben gefunden. Versuch andere Suchbegriffe oder Filter.",
+    "filterAddCategory": "Kategorie hinzufügen...",
+    "filterDate": "Zeitraum"
   },
   "ExpenseCard": {
     "paidBy": "Gezahlt von <strong>{paidBy}</strong> für <paidFor></paidFor>",
