@@ -296,10 +296,10 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
                   {t('filterDate')}
                 </label>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
                 <Input
                   type="date"
-                  className="text-base flex-1"
+                  className="min-w-0 text-base"
                   value={draft.dateFrom ?? firstDate}
                   onChange={(e) =>
                     setDraft((d) => ({
@@ -311,7 +311,7 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
                 <span className="text-muted-foreground text-sm">–</span>
                 <Input
                   type="date"
-                  className="text-base flex-1"
+                  className="min-w-0 text-base"
                   value={draft.dateTo ?? lastDate}
                   onChange={(e) =>
                     setDraft((d) => ({
