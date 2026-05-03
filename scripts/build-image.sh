@@ -9,6 +9,7 @@ BUILD_DATE=$(git show -s --format=%cI HEAD 2>/dev/null || date -u +%Y-%m-%dT%H:%
 
 # we need to set dummy data for POSTGRES env vars in order for build not to fail
 docker buildx build \
+    --network=host \
     --build-arg BUILD_VERSION=${BUILD_VERSION} \
     --build-arg BUILD_HASH=${BUILD_HASH} \
     --build-arg BUILD_DATE=${BUILD_DATE} \
