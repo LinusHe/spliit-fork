@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 SPLIIT_APP_NAME=$(node -p -e "require('./package.json').name")
 SPLIIT_VERSION=$(node -p -e "require('./package.json').version")
