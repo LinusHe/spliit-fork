@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 FROM node:21-alpine AS base
 
 WORKDIR /usr/app
@@ -8,13 +10,15 @@ COPY ./package.json \
      ./reset.d.ts \
      ./tailwind.config.js \
      ./postcss.config.js ./
-COPY ./scripts ./scripts
 COPY ./prisma ./prisma
 
-RUN apk add --no-cache openssl && \
-    npm ci --ignore-scripts && \
+RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=cache,target=/root/.cache/prisma \
+    apk add --no-cache openssl && \
+    npm ci --ignore-scripts --prefer-offline && \
     npx prisma generate
 
+COPY ./scripts ./scripts
 COPY ./src ./src
 COPY ./messages ./messages
 
@@ -39,7 +43,9 @@ WORKDIR /usr/app
 COPY --from=base /usr/app/package.json /usr/app/package-lock.json /usr/app/next.config.mjs ./
 COPY --from=base /usr/app/prisma ./prisma
 
-RUN npm ci --omit=dev --omit=optional --ignore-scripts && \
+RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=cache,target=/root/.cache/prisma \
+    npm ci --omit=dev --omit=optional --ignore-scripts --prefer-offline && \
     npx prisma generate
 
 FROM node:21-alpine AS runner
