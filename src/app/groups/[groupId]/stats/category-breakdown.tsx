@@ -14,8 +14,18 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useCurrentGroup } from '../current-group-context'
 
 const COLORS = [
-  '#059669', '#0891b2', '#7c3aed', '#db2777', '#ea580c', '#2563eb',
-  '#d97706', '#dc2626', '#4f46e5', '#65a30d', '#0d9488', '#9333ea',
+  '#059669',
+  '#0891b2',
+  '#7c3aed',
+  '#db2777',
+  '#ea580c',
+  '#2563eb',
+  '#d97706',
+  '#dc2626',
+  '#4f46e5',
+  '#65a30d',
+  '#0d9488',
+  '#9333ea',
 ]
 
 function formatAmount(amount: number, currency: string, locale: string) {
@@ -46,14 +56,20 @@ interface CustomTooltipProps {
   locale: string
 }
 
-function CustomTooltip({ active, payload, currency, locale }: CustomTooltipProps) {
+function CustomTooltip({
+  active,
+  payload,
+  currency,
+  locale,
+}: CustomTooltipProps) {
   if (!active || !payload?.length) return null
   const data = payload[0].payload
   return (
     <div className="rounded-lg border bg-background p-2 shadow-md text-sm">
       <p className="font-medium">{data.name}</p>
       <p className="text-muted-foreground">
-        {formatAmount(data.value, currency, locale)} ({data.percentage.toFixed(1)}%)
+        {formatAmount(data.value, currency, locale)} (
+        {data.percentage.toFixed(1)}%)
       </p>
     </div>
   )
@@ -74,6 +90,7 @@ function CategoryExpenseList({
   noItemsLabel: string
   participantId?: string
 }) {
+  const drawerCtx = useExpenseDrawerOptional()
   const { data, isLoading } = trpc.groups.stats.categoryExpenses.useQuery({
     groupId,
     categoryId,
@@ -91,12 +108,8 @@ function CategoryExpenseList({
   }
 
   if (!data?.length) {
-    return (
-      <p className="text-muted-foreground text-xs py-2">{noItemsLabel}</p>
-    )
+    return <p className="text-muted-foreground text-xs py-2">{noItemsLabel}</p>
   }
-
-  const drawerCtx = useExpenseDrawerOptional()
 
   return (
     <div className="flex flex-col gap-1 py-2">
@@ -142,6 +155,7 @@ function CategoryChart({
   noItemsLabel: string
 }) {
   const [expandedCategory, setExpandedCategory] = useState<number | null>(null)
+  const tCat = useTranslations('Categories')
   const { data, isLoading } = trpc.groups.stats.categoryBreakdown.useQuery({
     groupId,
     participantId,
@@ -158,16 +172,19 @@ function CategoryChart({
     )
   }
 
-  const chartData = data.categories.map((cat) => ({
-    name: cat.name,
-    value: Math.abs(cat.total),
-    percentage: data.grandTotal
-      ? (Math.abs(cat.total) / Math.abs(data.grandTotal)) * 100
-      : 0,
-    grouping: cat.grouping,
-    id: cat.id,
-    count: cat.count,
-  }))
+  const chartData = data.categories.map((cat) => {
+    return {
+      name: tCat(`${cat.grouping}.${cat.name}`),
+      value: Math.abs(cat.total),
+      percentage: data.grandTotal
+        ? (Math.abs(cat.total) / Math.abs(data.grandTotal)) * 100
+        : 0,
+      grouping: cat.grouping,
+      rawName: cat.name,
+      id: cat.id,
+      count: cat.count,
+    }
+  })
 
   if (chartData.length === 0) {
     return (
@@ -234,7 +251,11 @@ function CategoryChart({
                 />
                 <CategoryIcon
                   category={
-                    { id: cat.id, grouping: cat.grouping, name: cat.name } as any
+                    {
+                      id: cat.id,
+                      grouping: cat.grouping,
+                      name: cat.rawName,
+                    } as any
                   }
                   className="w-4 h-4 text-muted-foreground shrink-0"
                 />
