@@ -36,12 +36,11 @@ export default function BalancesAndReimbursements() {
 
   return (
     <>
-      <Card className="mb-4">
-        <CardHeader>
+      <Card>
+        <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
           <CardTitle>{t('title')}</CardTitle>
-          <CardDescription>{t('description')}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           {isLoading ? (
             <BalancesLoading participantCount={group?.participants.length} />
           ) : (
@@ -53,12 +52,12 @@ export default function BalancesAndReimbursements() {
           )}
         </CardContent>
       </Card>
-      <Card className="mb-4">
-        <CardHeader>
+      <Card>
+        <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
           <CardTitle>{t('Reimbursements.title')}</CardTitle>
           <CardDescription>{t('Reimbursements.description')}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           {isLoading ? (
             <ReimbursementsLoading
               participantCount={group?.participants.length}

@@ -2,7 +2,6 @@ import { ActivityList } from '@/app/groups/[groupId]/activity/activity-list'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -17,16 +16,13 @@ export function ActivityPageClient() {
   const t = useTranslations('Activity')
 
   return (
-    <>
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>{t('title')}</CardTitle>
-          <CardDescription>{t('description')}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col space-y-4">
-          <ActivityList />
-        </CardContent>
-      </Card>
-    </>
+    <Card>
+      <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
+        <CardTitle>{t('title')}</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
+        <ActivityList />
+      </CardContent>
+    </Card>
   )
 }
