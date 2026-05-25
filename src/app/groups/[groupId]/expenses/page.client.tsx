@@ -4,12 +4,6 @@ import { ActiveUserModal } from '@/app/groups/[groupId]/expenses/active-user-mod
 import { CreateFromReceiptButton } from '@/app/groups/[groupId]/expenses/create-from-receipt-button'
 import { ExpenseList } from '@/app/groups/[groupId]/expenses/expense-list'
 import ExportButton from '@/app/groups/[groupId]/export-button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Metadata } from 'next'
 import { useTranslations } from 'next-intl'
 import { useCurrentGroup } from '../current-group-context'
@@ -30,19 +24,18 @@ export default function GroupExpensesPageClient({
 
   return (
     <>
-      <Card>
-        <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4 flex flex-row items-center justify-between gap-2 space-y-0">
-          <CardTitle>{t('title')}</CardTitle>
+      <section>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <div className="flex gap-2">
             <ExportButton groupId={groupId} />
             {enableReceiptExtract && <CreateFromReceiptButton />}
           </div>
-        </CardHeader>
-
-        <CardContent className="p-0 pt-1 pb-4 sm:pb-6 flex flex-col gap-4 relative">
+        </div>
+        <div className="-mx-4">
           <ExpenseList />
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       <ActiveUserModal groupId={groupId} />
     </>
