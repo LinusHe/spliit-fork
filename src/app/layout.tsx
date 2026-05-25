@@ -3,10 +3,12 @@ import { ProgressBar } from '@/components/progress-bar'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
 import { UpdateBanner } from '@/components/update-banner'
 import { env } from '@/lib/env'
 import { TRPCProvider } from '@/trpc/client'
+import { Settings } from 'lucide-react'
 import type { Metadata, Viewport } from 'next'
 import { NextIntlClientProvider, useTranslations } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
@@ -66,14 +68,19 @@ function Content({ children }: { children: React.ReactNode }) {
   const t = useTranslations()
   return (
     <TRPCProvider>
-      <header id="global-header" className="fixed top-0 left-0 right-0 h-14 flex justify-between items-center bg-white dark:bg-gray-950 bg-opacity-80 dark:bg-opacity-80 px-4 border-b backdrop-blur-md z-50">
+      <header id="global-header" className="fixed top-0 left-0 right-0 h-14 flex justify-between items-center bg-white dark:bg-gray-950 bg-opacity-80 dark:bg-opacity-80 px-3 border-b backdrop-blur-md z-50">
         <Link
-          className="flex items-center gap-2 font-bold text-lg text-primary"
+          className="flex items-center gap-2 font-bold text-lg text-primary px-1"
           href="/groups"
         >
           Spliit
         </Link>
-        <div className="flex items-center gap-1">
+        <div className="flex gap-0.5 items-center shrink-0">
+          <Button variant="ghost" size="icon" asChild className="h-9 w-9">
+            <Link href="/settings" title={t('Settings.open')}>
+              <Settings className="w-[18px] h-[18px]" />
+            </Link>
+          </Button>
           <ThemeToggle />
         </div>
       </header>

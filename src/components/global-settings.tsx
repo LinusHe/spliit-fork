@@ -3,7 +3,6 @@
 import { AppVersion } from '@/components/app-version'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -11,15 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Settings } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 export function GlobalSettings({
@@ -90,29 +80,3 @@ export function GlobalSettings({
   )
 }
 
-export function GlobalSettingsDialog() {
-  const t = useTranslations('Settings')
-
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="shrink-0"
-          title={t('open')}
-        >
-          <Settings className="h-4 w-4" />
-          <span className="sr-only">{t('open')}</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{t('globalTitle')}</DialogTitle>
-          <DialogDescription>{t('globalDescription')}</DialogDescription>
-        </DialogHeader>
-        <GlobalSettings showHeading={false} />
-      </DialogContent>
-    </Dialog>
-  )
-}

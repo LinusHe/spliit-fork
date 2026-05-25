@@ -6,7 +6,6 @@ import {
   getRecentGroups,
   getStarredGroups,
 } from '@/app/groups/recent-groups-helpers'
-import { GlobalSettingsDialog } from '@/components/global-settings'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -364,7 +363,6 @@ function GroupFilters({
         <EyeOff className="h-4 w-4" />
         <span className="hidden sm:inline">{t('hideSettled')}</span>
       </Button>
-      <GlobalSettingsDialog />
     </div>
   )
 }
