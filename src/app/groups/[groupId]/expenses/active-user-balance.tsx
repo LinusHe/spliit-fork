@@ -22,23 +22,10 @@ export function ActiveUserBalance({ groupId, currency, expense }: Props) {
   let fmtBalance = <>{t('notInvolved')}</>
   if (Object.hasOwn(balances, activeUserId)) {
     const balance = balances[activeUserId]
-    let balanceDetail = <></>
-    if (balance.paid > 0 && balance.paidFor > 0) {
-      balanceDetail = (
-        <>
-          {' ('}
-          <Money {...{ currency, amount: balance.paid }} />
-          {' - '}
-          <Money {...{ currency, amount: balance.paidFor }} />
-          {')'}
-        </>
-      )
-    }
     fmtBalance = (
       <>
         {t('yourBalance')}{' '}
         <Money {...{ currency, amount: balance.total }} bold colored />
-        {balanceDetail}
       </>
     )
   }
