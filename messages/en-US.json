@@ -74,6 +74,14 @@
     "archive": "Archive group",
     "unarchive": "Unarchive group",
     "removeRecent": "Remove from recent groups",
+    "Filters": {
+      "search": "Search groups...",
+      "sortRecent": "Recently used",
+      "sortName": "Name",
+      "sortBalance": "Open balance",
+      "hideSettled": "Hide settled",
+      "noResults": "No groups found."
+    },
     "BalanceStatus": {
       "settled": "Settled",
       "getsBack": "You get back {amount}",

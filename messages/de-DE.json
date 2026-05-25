@@ -74,6 +74,14 @@
     "archive": "Gruppe archivieren",
     "unarchive": "Gruppe wiederherstellen",
     "removeRecent": "Aus letzten Gruppen entfernen",
+    "Filters": {
+      "search": "Gruppen suchen...",
+      "sortRecent": "Zuletzt genutzt",
+      "sortName": "Name",
+      "sortBalance": "Offener Betrag",
+      "hideSettled": "Quitt ausblenden",
+      "noResults": "Keine Gruppen gefunden."
+    },
     "BalanceStatus": {
       "settled": "Quitt",
       "getsBack": "Du bekommst {amount}",
