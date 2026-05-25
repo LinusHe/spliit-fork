@@ -79,6 +79,7 @@
       "sortRecent": "Zuletzt genutzt",
       "sortName": "Name",
       "sortBalance": "Offener Betrag",
+      "sortLabel": "Sortierung",
       "hideSettled": "Quitt ausblenden",
       "noResults": "Keine Gruppen gefunden."
     },
@@ -128,6 +129,8 @@
       "presetDescription": "Vorauswahlen legen nur fest, welche Kategorien in dieser Gruppe starten.",
       "categoriesTitle": "Kategorieauswahl",
       "categoriesDescription": "Passe an, welche globalen Kategorien in dieser Gruppe erscheinen.",
+      "customizeCategories": "Kategorieauswahl anpassen",
+      "selectedCount": "{count} gewählt",
       "Presets": {
         "all": "Alle Kategorien",
         "custom": "Benutzerdefiniert",
@@ -436,6 +439,7 @@
   },
   "Settings": {
     "title": "Einstellungen",
+    "open": "Einstellungen öffnen",
     "globalTitle": "Globale Einstellungen",
     "globalDescription": "Diese Einstellungen gelten überall in Spliit, egal in welcher Gruppe du bist.",
     "appearance": "Darstellung",

@@ -3,6 +3,7 @@
 import { AppVersion } from '@/components/app-version'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -10,26 +11,43 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Settings } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-export function GlobalSettings() {
+export function GlobalSettings({
+  showHeading = true,
+}: {
+  showHeading?: boolean
+}) {
   const t = useTranslations('Settings')
 
   return (
     <section className="space-y-3">
-      <div>
-        <h2 className="text-xl font-semibold">{t('globalTitle')}</h2>
-        <p className="text-sm text-muted-foreground">
-          {t('globalDescription')}
-        </p>
-      </div>
+      {showHeading && (
+        <div>
+          <h2 className="text-xl font-semibold">{t('globalTitle')}</h2>
+          <p className="text-sm text-muted-foreground">
+            {t('globalDescription')}
+          </p>
+        </div>
+      )}
       <Card>
-        <CardHeader>
-          <CardTitle>{t('appearance')}</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-lg sm:text-2xl">
+            {t('appearance')}
+          </CardTitle>
           <CardDescription>{t('appearanceDescription')}</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="flex items-center justify-between rounded-md border px-3 py-2">
+        <CardContent className="grid gap-3 p-4 pt-0 sm:grid-cols-2 sm:p-6 sm:pt-0">
+          <div className="flex flex-col items-start gap-3 rounded-md border px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="text-sm font-medium">{t('language')}</div>
               <div className="text-sm text-muted-foreground">
@@ -38,7 +56,7 @@ export function GlobalSettings() {
             </div>
             <LocaleSwitcher />
           </div>
-          <div className="flex items-center justify-between rounded-md border px-3 py-2">
+          <div className="flex flex-col items-start gap-3 rounded-md border px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="text-sm font-medium">{t('theme')}</div>
               <div className="text-sm text-muted-foreground">
@@ -50,10 +68,10 @@ export function GlobalSettings() {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader>
-          <CardTitle>{t('about')}</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-lg sm:text-2xl">{t('about')}</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
+        <CardContent className="flex flex-col gap-3 p-4 pt-0 text-sm text-muted-foreground sm:p-6 sm:pt-0">
           <AppVersion />
           <p>
             {t('builtWith')}{' '}
@@ -69,5 +87,32 @@ export function GlobalSettings() {
         </CardContent>
       </Card>
     </section>
+  )
+}
+
+export function GlobalSettingsDialog() {
+  const t = useTranslations('Settings')
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          className="shrink-0"
+          title={t('open')}
+        >
+          <Settings className="h-4 w-4" />
+          <span className="sr-only">{t('open')}</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{t('globalTitle')}</DialogTitle>
+          <DialogDescription>{t('globalDescription')}</DialogDescription>
+        </DialogHeader>
+        <GlobalSettings showHeading={false} />
+      </DialogContent>
+    </Dialog>
   )
 }

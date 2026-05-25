@@ -6,20 +6,21 @@ import {
   getRecentGroups,
   getStarredGroups,
 } from '@/app/groups/recent-groups-helpers'
+import { GlobalSettingsDialog } from '@/components/global-settings'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
 import { getGroups } from '@/lib/api'
 import { trpc } from '@/trpc/client'
 import { AppRouterOutput } from '@/trpc/routers/_app'
-import { Loader2, Search } from 'lucide-react'
+import { ArrowUpDown, EyeOff, Loader2, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { PropsWithChildren, useEffect, useState } from 'react'
@@ -304,10 +305,17 @@ function GroupFilters({
   setHideSettled: (hideSettled: boolean) => void
 }) {
   const t = useTranslations('Groups.Filters')
+  const activeSortLabel = t(
+    sortMode === 'name'
+      ? 'sortName'
+      : sortMode === 'balance'
+      ? 'sortBalance'
+      : 'sortRecent',
+  )
 
   return (
-    <div className="mt-4 mb-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-      <div className="relative flex-1">
+    <div className="mt-4 mb-2 flex items-center gap-2">
+      <div className="relative min-w-0 flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={query}
@@ -316,26 +324,47 @@ function GroupFilters({
           className="pl-9"
         />
       </div>
-      <Select
-        value={sortMode}
-        onValueChange={(value) => setSortMode(value as SortMode)}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            className="h-10 shrink-0 gap-2 px-3"
+            title={t('sortLabel')}
+          >
+            <ArrowUpDown className="h-4 w-4" />
+            <span className="hidden max-w-28 truncate sm:inline">
+              {activeSortLabel}
+            </span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>{t('sortLabel')}</DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={sortMode}
+            onValueChange={(value) => setSortMode(value as SortMode)}
+          >
+            <DropdownMenuRadioItem value="recent">
+              {t('sortRecent')}
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="name">
+              {t('sortName')}
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="balance">
+              {t('sortBalance')}
+            </DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button
+        variant={hideSettled ? 'default' : 'outline'}
+        className="h-10 shrink-0 gap-2 px-3"
+        title={t('hideSettled')}
+        onClick={() => setHideSettled(!hideSettled)}
       >
-        <SelectTrigger className="sm:w-48">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="recent">{t('sortRecent')}</SelectItem>
-          <SelectItem value="name">{t('sortName')}</SelectItem>
-          <SelectItem value="balance">{t('sortBalance')}</SelectItem>
-        </SelectContent>
-      </Select>
-      <label className="flex h-10 items-center gap-2 rounded-md border px-3 text-sm text-muted-foreground">
-        <Checkbox
-          checked={hideSettled}
-          onCheckedChange={(checked) => setHideSettled(Boolean(checked))}
-        />
-        {t('hideSettled')}
-      </label>
+        <EyeOff className="h-4 w-4" />
+        <span className="hidden sm:inline">{t('hideSettled')}</span>
+      </Button>
+      <GlobalSettingsDialog />
     </div>
   )
 }

@@ -11,6 +11,14 @@ import {
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import {
   Form,
   FormControl,
   FormDescription,
@@ -43,7 +51,7 @@ import { GroupFormValues, groupFormSchema } from '@/lib/schemas'
 import { trpc } from '@/trpc/client'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Category } from '@prisma/client'
-import { Save, Trash2 } from 'lucide-react'
+import { ListChecks, Save, Trash2 } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -85,6 +93,7 @@ function CategoryPresetSettings({
     },
     {},
   )
+  const selectedCategoryCount = selectedCategoryIds.length
 
   const setPreset = (value: string) => {
     form.setValue('categoryPreset', value, {
@@ -151,45 +160,60 @@ function CategoryPresetSettings({
             </FormItem>
           )}
         />
-
-        <div className="space-y-3">
-          <div>
-            <h3 className="text-sm font-medium">{t('categoriesTitle')}</h3>
-            <p className="text-sm text-muted-foreground">
-              {t('categoriesDescription')}
-            </p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {Object.entries(categoriesByGroup).map(
-              ([group, groupCategories]) => (
-                <div key={group} className="space-y-2">
-                  <h4 className="text-sm font-medium text-muted-foreground">
-                    {tCat(`${group}.heading`)}
-                  </h4>
-                  <div className="space-y-1">
-                    {groupCategories.map((category) => (
-                      <label
-                        key={category.id}
-                        className="flex min-h-9 items-center gap-2 rounded-md border px-3 py-2 text-sm"
-                      >
-                        <Checkbox
-                          checked={selectedCategoryIds.includes(category.id)}
-                          onCheckedChange={(checked) =>
-                            toggleCategory(category.id, Boolean(checked))
-                          }
-                        />
-                        <CategoryIcon category={category} className="h-4 w-4" />
-                        <span>
-                          {tCat(`${category.grouping}.${category.name}`)}
-                        </span>
-                      </label>
-                    ))}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button type="button" variant="outline" className="w-full gap-2">
+              <ListChecks className="h-4 w-4" />
+              <span className="min-w-0 flex-1 truncate text-left">
+                {t('customizeCategories')}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {t('selectedCount', { count: selectedCategoryCount })}
+              </span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{t('categoriesTitle')}</DialogTitle>
+              <DialogDescription>
+                {t('categoriesDescription')}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 md:grid-cols-2">
+              {Object.entries(categoriesByGroup).map(
+                ([group, groupCategories]) => (
+                  <div key={group} className="space-y-2">
+                    <h4 className="text-sm font-medium text-muted-foreground">
+                      {tCat(`${group}.heading`)}
+                    </h4>
+                    <div className="space-y-1">
+                      {groupCategories.map((category) => (
+                        <label
+                          key={category.id}
+                          className="flex min-h-9 items-center gap-2 rounded-md border px-3 py-2 text-sm"
+                        >
+                          <Checkbox
+                            checked={selectedCategoryIds.includes(category.id)}
+                            onCheckedChange={(checked) =>
+                              toggleCategory(category.id, Boolean(checked))
+                            }
+                          />
+                          <CategoryIcon
+                            category={category}
+                            className="h-4 w-4"
+                          />
+                          <span>
+                            {tCat(`${category.grouping}.${category.name}`)}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ),
-            )}
-          </div>
-        </div>
+                ),
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   )

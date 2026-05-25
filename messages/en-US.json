@@ -79,6 +79,7 @@
       "sortRecent": "Recently used",
       "sortName": "Name",
       "sortBalance": "Open balance",
+      "sortLabel": "Sort",
       "hideSettled": "Hide settled",
       "noResults": "No groups found."
     },
@@ -134,6 +135,8 @@
       "presetDescription": "Presets only define the starting category selection for this group.",
       "categoriesTitle": "Category selection",
       "categoriesDescription": "Adjust which global categories appear in this group.",
+      "customizeCategories": "Customize category selection",
+      "selectedCount": "{count} selected",
       "Presets": {
         "all": "All categories",
         "custom": "Custom",
@@ -428,6 +431,7 @@
   },
   "Settings": {
     "title": "Settings",
+    "open": "Open settings",
     "globalTitle": "Global settings",
     "globalDescription": "These settings apply across Spliit, no matter which group you are in.",
     "appearance": "Appearance",
