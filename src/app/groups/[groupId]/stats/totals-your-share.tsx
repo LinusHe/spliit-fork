@@ -1,6 +1,6 @@
 'use client'
 import { Currency } from '@/lib/currency'
-import { cn, formatCurrency } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import { useLocale, useTranslations } from 'next-intl'
 
 export function TotalsYourShare({
@@ -14,14 +14,9 @@ export function TotalsYourShare({
   const t = useTranslations('Stats.Totals')
 
   return (
-    <div>
-      <div className="text-muted-foreground">{t('yourShare')}</div>
-      <div
-        className={cn(
-          'text-lg',
-          totalParticipantShare < 0 ? 'text-green-600' : 'text-red-600',
-        )}
-      >
+    <div className="rounded-md border p-3">
+      <div className="text-xs text-muted-foreground">{t('yourShare')}</div>
+      <div className="text-lg font-semibold tabular-nums mt-1">
         {formatCurrency(currency, Math.abs(totalParticipantShare), locale)}
       </div>
     </div>

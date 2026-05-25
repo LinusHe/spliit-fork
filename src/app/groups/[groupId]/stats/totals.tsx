@@ -18,13 +18,19 @@ export function Totals() {
 
   if (!data || !group)
     return (
-      <div className="flex flex-col gap-7">
-        {[0, 1, 2].map((index) => (
-          <div key={index}>
-            <Skeleton className="mt-1 h-3 w-48" />
-            <Skeleton className="mt-3 h-4 w-20" />
-          </div>
-        ))}
+      <div className="flex flex-col gap-5">
+        <div>
+          <Skeleton className="h-3 w-40" />
+          <Skeleton className="mt-2 h-8 w-32" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {[0, 1].map((index) => (
+            <div key={index} className="rounded-md border p-3">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="mt-2 h-5 w-16" />
+            </div>
+          ))}
+        </div>
       </div>
     )
 
@@ -37,13 +43,13 @@ export function Totals() {
   const currency = getCurrencyFromGroup(group)
 
   return (
-    <>
+    <div className="flex flex-col gap-5">
       <TotalsGroupSpending
         totalGroupSpendings={totalGroupSpendings}
         currency={currency}
       />
       {participantId && (
-        <>
+        <div className="grid grid-cols-2 gap-3">
           <TotalsYourSpendings
             totalParticipantSpendings={totalParticipantSpendings}
             currency={currency}
@@ -52,8 +58,8 @@ export function Totals() {
             totalParticipantShare={totalParticipantShare}
             currency={currency}
           />
-        </>
+        </div>
       )}
-    </>
+    </div>
   )
 }

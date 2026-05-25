@@ -13,8 +13,8 @@ export function TotalsGroupSpending({ totalGroupSpendings, currency }: Props) {
   const balance = totalGroupSpendings < 0 ? 'groupEarnings' : 'groupSpendings'
   return (
     <div>
-      <div className="text-muted-foreground">{t(balance)}</div>
-      <div className="text-lg">
+      <div className="text-sm text-muted-foreground">{t(balance)}</div>
+      <div className="text-3xl font-semibold tabular-nums tracking-tight mt-1">
         {formatCurrency(currency, Math.abs(totalGroupSpendings), locale)}
       </div>
     </div>
