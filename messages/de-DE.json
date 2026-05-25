@@ -74,6 +74,12 @@
     "archive": "Gruppe archivieren",
     "unarchive": "Gruppe wiederherstellen",
     "removeRecent": "Aus letzten Gruppen entfernen",
+    "BalanceStatus": {
+      "settled": "Quitt",
+      "getsBack": "Du bekommst {amount}",
+      "owes": "Du schuldest {amount}",
+      "noActiveUser": "Keine Person gewählt"
+    },
     "RecentRemovedToast": {
       "title": "Gruppe wurde entfernt",
       "description": "Die Gruppe wurde von deiner Liste der letzten Gruppen entfernt.",

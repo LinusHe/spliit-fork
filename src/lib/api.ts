@@ -1,3 +1,8 @@
+import {
+  getBalances,
+  getPublicBalances,
+  getSuggestedReimbursements,
+} from '@/lib/balances'
 import { prisma } from '@/lib/prisma'
 import { ExpenseFormValues, GroupFormValues } from '@/lib/schemas'
 import {
@@ -143,15 +148,24 @@ export async function getGroupExpensesParticipants(groupId: string) {
 }
 
 export async function getGroups(groupIds: string[]) {
-  return (
-    await prisma.group.findMany({
-      where: { id: { in: groupIds } },
-      include: { _count: { select: { participants: true } } },
-    })
-  ).map((group) => ({
-    ...group,
-    createdAt: group.createdAt.toISOString(),
-  }))
+  const groups = await prisma.group.findMany({
+    where: { id: { in: groupIds } },
+    include: { _count: { select: { participants: true } } },
+  })
+
+  return Promise.all(
+    groups.map(async (group) => {
+      const balances = getBalances(await getGroupExpenses(group.id))
+      const reimbursements = getSuggestedReimbursements(balances)
+      const publicBalances = getPublicBalances(reimbursements)
+
+      return {
+        ...group,
+        createdAt: group.createdAt.toISOString(),
+        balances: publicBalances,
+      }
+    }),
+  )
 }
 
 export async function updateExpense(

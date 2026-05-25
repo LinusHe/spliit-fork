@@ -15,9 +15,20 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/use-toast'
+import { useActiveUser } from '@/lib/hooks'
+import { cn, formatCurrency, getCurrencyFromGroup } from '@/lib/utils'
 import { AppRouterOutput } from '@/trpc/routers/_app'
 import { StarFilledIcon } from '@radix-ui/react-icons'
-import { Calendar, MoreHorizontal, Star, Users } from 'lucide-react'
+import {
+  Calendar,
+  CircleCheck,
+  MoreHorizontal,
+  Star,
+  TrendingDown,
+  TrendingUp,
+  UserRound,
+  Users,
+} from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -39,6 +50,11 @@ export function RecentGroupListCard({
   const locale = useLocale()
   const toast = useToast()
   const t = useTranslations('Groups')
+  const activeUser = useActiveUser(group.id)
+  const balance =
+    activeUser && activeUser !== 'None'
+      ? groupDetail?.balances[activeUser]?.total
+      : undefined
 
   return (
     <li key={group.id}>
@@ -127,22 +143,29 @@ export function RecentGroupListCard({
             </div>
             <div className="text-muted-foreground font-normal text-xs">
               {groupDetail ? (
-                <div className="w-full flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Users className="w-3 h-3 inline mr-1" />
-                    <span>{groupDetail._count.participants}</span>
+                <div className="flex w-full flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Users className="w-3 h-3 inline mr-1" />
+                      <span>{groupDetail._count.participants}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Calendar className="w-3 h-3 inline mx-1" />
+                      <span>
+                        {new Date(groupDetail.createdAt).toLocaleDateString(
+                          locale,
+                          {
+                            dateStyle: 'medium',
+                          },
+                        )}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center">
-                    <Calendar className="w-3 h-3 inline mx-1" />
-                    <span>
-                      {new Date(groupDetail.createdAt).toLocaleDateString(
-                        locale,
-                        {
-                          dateStyle: 'medium',
-                        },
-                      )}
-                    </span>
-                  </div>
+                  <GroupBalanceStatus
+                    balance={balance}
+                    groupDetail={groupDetail}
+                    locale={locale}
+                  />
                 </div>
               ) : (
                 <div className="flex justify-between">
@@ -155,5 +178,55 @@ export function RecentGroupListCard({
         </div>
       </Button>
     </li>
+  )
+}
+
+function GroupBalanceStatus({
+  balance,
+  groupDetail,
+  locale,
+}: {
+  balance?: number
+  groupDetail: AppRouterOutput['groups']['list']['groups'][number]
+  locale: string
+}) {
+  const t = useTranslations('Groups.BalanceStatus')
+
+  if (balance === undefined) {
+    return (
+      <span className="inline-flex items-center gap-1 text-muted-foreground">
+        <UserRound className="h-3 w-3" />
+        {t('noActiveUser')}
+      </span>
+    )
+  }
+
+  const currency = getCurrencyFromGroup(groupDetail)
+  const amount = formatCurrency(currency, Math.abs(balance), locale)
+  const status =
+    balance === 0
+      ? {
+          icon: CircleCheck,
+          label: t('settled'),
+          className: 'text-emerald-600 dark:text-emerald-400',
+        }
+      : balance > 0
+      ? {
+          icon: TrendingUp,
+          label: t('getsBack', { amount }),
+          className: 'text-emerald-600 dark:text-emerald-400',
+        }
+      : {
+          icon: TrendingDown,
+          label: t('owes', { amount }),
+          className: 'text-amber-700 dark:text-amber-400',
+        }
+  const Icon = status.icon
+
+  return (
+    <span className={cn('inline-flex items-center gap-1', status.className)}>
+      <Icon className="h-3 w-3" />
+      {status.label}
+    </span>
   )
 }

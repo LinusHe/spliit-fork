@@ -74,6 +74,12 @@
     "archive": "Archive group",
     "unarchive": "Unarchive group",
     "removeRecent": "Remove from recent groups",
+    "BalanceStatus": {
+      "settled": "Settled",
+      "getsBack": "You get back {amount}",
+      "owes": "You owe {amount}",
+      "noActiveUser": "No person selected"
+    },
     "RecentRemovedToast": {
       "title": "Group has been removed",
       "description": "The group was removed from your recent groups list.",
