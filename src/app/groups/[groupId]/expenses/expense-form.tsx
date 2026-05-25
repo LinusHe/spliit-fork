@@ -3,6 +3,7 @@ import { CurrencySelector } from '@/components/currency-selector'
 import { ExpenseDocumentsInput } from '@/components/expense-documents-input'
 import { SubmitButton } from '@/components/submit-button'
 import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
 import {
   Card,
   CardContent,
@@ -26,6 +27,11 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -54,7 +60,7 @@ import {
 import { AppRouterOutput } from '@/trpc/routers/_app'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { RecurrenceRule } from '@prisma/client'
-import { ChevronRight, Copy, Save } from 'lucide-react'
+import { CalendarIcon, ChevronRight, Copy, Save } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -529,25 +535,55 @@ export function ExpenseForm({
             <FormField
               control={form.control}
               name="expenseDate"
-              render={({ field }) => (
-                <FormItem className="sm:order-1">
-                  <FormLabel>{t(`${sExpense}.DateField.label`)}</FormLabel>
-                  <FormControl>
-                    <Input
-                      className="date-base"
-                      type="date"
-                      defaultValue={formatDate(field.value)}
-                      onChange={(event) => {
-                        return field.onChange(new Date(event.target.value))
-                      }}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t(`${sExpense}.DateField.description`)}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const value = field.value && !isNaN(field.value as any)
+                  ? field.value
+                  : undefined
+                return (
+                  <FormItem className="sm:order-1 flex flex-col">
+                    <FormLabel>{t(`${sExpense}.DateField.label`)}</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className={cn(
+                              'w-full justify-start text-left font-normal tabular-nums',
+                              !value && 'text-muted-foreground',
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4 opacity-70" />
+                            {value
+                              ? value.toLocaleDateString(locale, {
+                                  dateStyle: 'long',
+                                })
+                              : t(`${sExpense}.DateField.label`)}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="start"
+                        className="w-auto p-0"
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={value}
+                          onSelect={(date) =>
+                            field.onChange(date ?? new Date())
+                          }
+                          defaultMonth={value}
+                          weekStartsOn={1}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormDescription>
+                      {t(`${sExpense}.DateField.description`)}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
             />
 
             <FormField
@@ -1345,7 +1381,3 @@ export function ExpenseForm({
   )
 }
 
-function formatDate(date?: Date) {
-  if (!date || isNaN(date as any)) date = new Date()
-  return date.toISOString().substring(0, 10)
-}
