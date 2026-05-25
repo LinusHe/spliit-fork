@@ -1,3 +1,4 @@
+import { CategoryIcon } from '@/app/groups/[groupId]/expenses/category-icon'
 import { SubmitButton } from '@/components/submit-button'
 import { Button } from '@/components/ui/button'
 import {
@@ -8,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -32,14 +34,20 @@ import {
 } from '@/components/ui/select'
 import { Locale } from '@/i18n/request'
 import { getGroup } from '@/lib/api'
+import {
+  CATEGORY_PRESET_KEYS,
+  getPresetCategoryIds,
+} from '@/lib/category-presets'
 import { defaultCurrencyList, getCurrency } from '@/lib/currency'
 import { GroupFormValues, groupFormSchema } from '@/lib/schemas'
+import { trpc } from '@/trpc/client'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Category } from '@prisma/client'
 import { Save, Trash2 } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { UseFormReturn, useFieldArray, useForm } from 'react-hook-form'
 import { CurrencySelector } from './currency-selector'
 import { Textarea } from './ui/textarea'
 
@@ -50,6 +58,141 @@ export type Props = {
     participantId?: string,
   ) => Promise<void>
   protectedParticipantIds?: string[]
+}
+
+function CategoryPresetSettings({
+  form,
+}: {
+  form: UseFormReturn<GroupFormValues>
+}) {
+  const t = useTranslations('GroupForm.CategoryPreset')
+  const tCat = useTranslations('Categories')
+  const { data: categoriesData } = trpc.categories.list.useQuery()
+  const categories = categoriesData?.categories ?? []
+  const preset = form.watch('categoryPreset')
+  const configuredCategoryIds = form.watch('categoryIds') ?? []
+  const selectedCategoryIds =
+    configuredCategoryIds.length > 0
+      ? configuredCategoryIds
+      : preset === 'custom'
+      ? []
+      : categories.map((category) => category.id)
+
+  const categoriesByGroup = categories.reduce<Record<string, Category[]>>(
+    (acc, category) => {
+      acc[category.grouping] = [...(acc[category.grouping] ?? []), category]
+      return acc
+    },
+    {},
+  )
+
+  const setPreset = (value: string) => {
+    form.setValue('categoryPreset', value, {
+      shouldDirty: true,
+      shouldTouch: true,
+    })
+    form.setValue(
+      'categoryIds',
+      value === 'all' ? [] : getPresetCategoryIds(value),
+      {
+        shouldDirty: true,
+        shouldTouch: true,
+      },
+    )
+  }
+
+  const toggleCategory = (categoryId: number, checked: boolean) => {
+    const next = checked
+      ? Array.from(new Set([...selectedCategoryIds, categoryId]))
+      : selectedCategoryIds.filter((id) => id !== categoryId)
+
+    form.setValue('categoryPreset', 'custom', {
+      shouldDirty: true,
+      shouldTouch: true,
+    })
+    form.setValue('categoryIds', next, {
+      shouldDirty: true,
+      shouldTouch: true,
+    })
+  }
+
+  return (
+    <Card className="mb-4">
+      <CardHeader>
+        <CardTitle>{t('title')}</CardTitle>
+        <CardDescription>{t('description')}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <FormField
+          control={form.control}
+          name="categoryPreset"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('presetLabel')}</FormLabel>
+              <Select
+                value={field.value}
+                onValueChange={(value) => {
+                  field.onChange(value)
+                  setPreset(value)
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORY_PRESET_KEYS.map((presetKey) => (
+                    <SelectItem key={presetKey} value={presetKey}>
+                      {t(`Presets.${presetKey}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>{t('presetDescription')}</FormDescription>
+            </FormItem>
+          )}
+        />
+
+        <div className="space-y-3">
+          <div>
+            <h3 className="text-sm font-medium">{t('categoriesTitle')}</h3>
+            <p className="text-sm text-muted-foreground">
+              {t('categoriesDescription')}
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {Object.entries(categoriesByGroup).map(
+              ([group, groupCategories]) => (
+                <div key={group} className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">
+                    {tCat(`${group}.heading`)}
+                  </h4>
+                  <div className="space-y-1">
+                    {groupCategories.map((category) => (
+                      <label
+                        key={category.id}
+                        className="flex min-h-9 items-center gap-2 rounded-md border px-3 py-2 text-sm"
+                      >
+                        <Checkbox
+                          checked={selectedCategoryIds.includes(category.id)}
+                          onCheckedChange={(checked) =>
+                            toggleCategory(category.id, Boolean(checked))
+                          }
+                        />
+                        <CategoryIcon category={category} className="h-4 w-4" />
+                        <span>
+                          {tCat(`${category.grouping}.${category.name}`)}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 export function GroupForm({
@@ -67,6 +210,11 @@ export function GroupForm({
           information: group.information ?? '',
           currency: group.currency ?? '',
           currencyCode: group.currencyCode ?? '',
+          categoryPreset: group.categoryPreset ?? 'all',
+          categoryIds:
+            group.categorySelections?.map(
+              (selection) => selection.categoryId,
+            ) ?? [],
           participants: group.participants,
         }
       : {
@@ -74,6 +222,8 @@ export function GroupForm({
           information: '',
           currency: '',
           currencyCode: process.env.NEXT_PUBLIC_DEFAULT_CURRENCY_CODE || 'USD', // TODO: If NEXT_PUBLIC_DEFAULT_CURRENCY_CODE, is not set, determine the default currency code based on locale
+          categoryPreset: 'all',
+          categoryIds: [],
           participants: [
             { name: t('Participants.John') },
             { name: t('Participants.Jane') },
@@ -232,6 +382,8 @@ export function GroupForm({
             </div>
           </CardContent>
         </Card>
+
+        <CategoryPresetSettings form={form} />
 
         <Card className="mb-4">
           <CardHeader>

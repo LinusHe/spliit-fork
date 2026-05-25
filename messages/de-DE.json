@@ -121,6 +121,24 @@
       "placeholder": "€, $, £…",
       "description": "Wir benutzen es, um Beträge anzuzeigen."
     },
+    "CategoryPreset": {
+      "title": "Kategorien",
+      "description": "Wähle aus, welche Kategorien in dieser Gruppe verfügbar sein sollen.",
+      "presetLabel": "Vorauswahl",
+      "presetDescription": "Vorauswahlen legen nur fest, welche Kategorien in dieser Gruppe starten.",
+      "categoriesTitle": "Kategorieauswahl",
+      "categoriesDescription": "Passe an, welche globalen Kategorien in dieser Gruppe erscheinen.",
+      "Presets": {
+        "all": "Alle Kategorien",
+        "custom": "Benutzerdefiniert",
+        "travel": "Reise",
+        "outdoorTravel": "Outdoor-Reise",
+        "household": "WG/Haushalt",
+        "event": "Event/Party",
+        "friends": "Alltag/Freunde",
+        "project": "Projekt/Verein"
+      }
+    },
     "Participants": {
       "title": "Mitglieder",
       "description": "Füge einen Namen für jedes Gruppenmitglied hinzu.",
@@ -418,8 +436,14 @@
   },
   "Settings": {
     "title": "Einstellungen",
+    "globalTitle": "Globale Einstellungen",
+    "globalDescription": "Diese Einstellungen gelten überall in Spliit, egal in welcher Gruppe du bist.",
+    "appearance": "Darstellung",
+    "appearanceDescription": "Gemeinsame Anzeigeeinstellungen für dieses Gerät.",
     "language": "Sprache",
     "languageDescription": "Anzeigesprache ändern.",
+    "theme": "Theme",
+    "themeDescription": "Hell, dunkel oder Systemeinstellung wählen.",
     "about": "Über",
     "builtWith": "Basierend auf"
   },
@@ -504,6 +528,34 @@
       "Parking": "Parken",
       "Plane": "Flugzeug",
       "Taxi": "Taxi"
+    },
+    "Travel": {
+      "heading": "Reise",
+      "Accommodation": "Unterkunft",
+      "Package Tour": "Pauschalreise/Tour",
+      "Deposit": "Anzahlung",
+      "Activities": "Aktivitäten",
+      "Tickets": "Eintritt/Tickets",
+      "Gear Rental": "Ausrüstung/Miete",
+      "Fees & Permits": "Gebühren/Permits",
+      "Luggage": "Gepäck",
+      "Travel Insurance": "Reiseversicherung",
+      "Ferry/Boat": "Fähre/Boot"
+    },
+    "Event": {
+      "heading": "Event",
+      "Venue": "Location/Miete",
+      "Decoration": "Deko/Material",
+      "Tickets": "Tickets",
+      "Equipment": "Technik/Equipment"
+    },
+    "Work": {
+      "heading": "Arbeit/Projekt",
+      "Software": "Software",
+      "Hardware": "Hardware",
+      "Hosting": "Hosting",
+      "Office Supplies": "Büromaterial",
+      "Contractors": "Dienstleister"
     },
     "Utilities": {
       "heading": "Versorgung",

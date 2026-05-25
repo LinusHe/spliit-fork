@@ -3,6 +3,7 @@ import {
   getPublicBalances,
   getSuggestedReimbursements,
 } from '@/lib/balances'
+import { getPresetCategoryIds } from '@/lib/category-presets'
 import { prisma } from '@/lib/prisma'
 import { ExpenseFormValues, GroupFormValues } from '@/lib/schemas'
 import {
@@ -18,6 +19,11 @@ export function randomId() {
 }
 
 export async function createGroup(groupFormValues: GroupFormValues) {
+  const categoryIds =
+    groupFormValues.categoryIds.length > 0
+      ? groupFormValues.categoryIds
+      : getPresetCategoryIds(groupFormValues.categoryPreset)
+
   return prisma.group.create({
     data: {
       id: randomId(),
@@ -25,6 +31,13 @@ export async function createGroup(groupFormValues: GroupFormValues) {
       information: groupFormValues.information,
       currency: groupFormValues.currency,
       currencyCode: groupFormValues.currencyCode,
+      categoryPreset: groupFormValues.categoryPreset,
+      categorySelections: {
+        createMany: {
+          data: categoryIds.map((categoryId) => ({ categoryId })),
+          skipDuplicates: true,
+        },
+      },
       participants: {
         createMany: {
           data: groupFormValues.participants.map(({ name }) => ({
@@ -313,6 +326,10 @@ export async function updateGroup(
   if (!existingGroup) throw new Error('Invalid group ID')
 
   await logActivity(groupId, ActivityType.UPDATE_GROUP, { participantId })
+  const categoryIds =
+    groupFormValues.categoryIds.length > 0
+      ? groupFormValues.categoryIds
+      : getPresetCategoryIds(groupFormValues.categoryPreset)
 
   return prisma.group.update({
     where: { id: groupId },
@@ -321,6 +338,14 @@ export async function updateGroup(
       information: groupFormValues.information,
       currency: groupFormValues.currency,
       currencyCode: groupFormValues.currencyCode,
+      categoryPreset: groupFormValues.categoryPreset,
+      categorySelections: {
+        deleteMany: {},
+        createMany: {
+          data: categoryIds.map((categoryId) => ({ categoryId })),
+          skipDuplicates: true,
+        },
+      },
       participants: {
         deleteMany: existingGroup.participants.filter(
           (p) => !groupFormValues.participants.some((p2) => p2.id === p.id),
@@ -349,12 +374,31 @@ export async function updateGroup(
 export async function getGroup(groupId: string) {
   return prisma.group.findUnique({
     where: { id: groupId },
-    include: { participants: true },
+    include: { participants: true, categorySelections: true },
   })
 }
 
 export async function getCategories() {
   return prisma.category.findMany()
+}
+
+export async function getCategoriesForGroup(groupId?: string) {
+  if (!groupId) return getCategories()
+
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    include: { categorySelections: true },
+  })
+  const categoryIds = group?.categorySelections.map(
+    (selection) => selection.categoryId,
+  )
+
+  if (!categoryIds || categoryIds.length === 0) return getCategories()
+
+  return prisma.category.findMany({
+    where: { id: { in: categoryIds } },
+    orderBy: { id: 'asc' },
+  })
 }
 
 export async function getGroupExpenses(
@@ -387,9 +431,7 @@ export async function getGroupExpenses(
     ]
 
     // Try to parse date from text (DD.MM.YYYY, DD.MM.YY, DD.MM., DD.M.)
-    const dateMatch = textFilter.match(
-      /^(\d{1,2})\.(\d{1,2})\.(\d{2,4})?$/,
-    )
+    const dateMatch = textFilter.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})?$/)
     if (dateMatch) {
       const day = parseInt(dateMatch[1], 10)
       const month = parseInt(dateMatch[2], 10)
@@ -397,7 +439,9 @@ export async function getGroupExpenses(
       if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
         if (yearStr) {
           const year =
-            yearStr.length === 2 ? 2000 + parseInt(yearStr, 10) : parseInt(yearStr, 10)
+            yearStr.length === 2
+              ? 2000 + parseInt(yearStr, 10)
+              : parseInt(yearStr, 10)
           const d = new Date(year, month - 1, day)
           const next = new Date(year, month - 1, day + 1)
           orConditions.push({

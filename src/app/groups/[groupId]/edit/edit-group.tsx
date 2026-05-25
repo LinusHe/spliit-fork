@@ -1,24 +1,14 @@
 'use client'
 
 import GroupInformation from '@/app/groups/[groupId]/information/group-information'
-import { AppVersion } from '@/components/app-version'
+import { GlobalSettings } from '@/components/global-settings'
 import { GroupForm } from '@/components/group-form'
-import { LocaleSwitcher } from '@/components/locale-switcher'
 import { NotificationSettings } from '@/components/notification-settings'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { trpc } from '@/trpc/client'
-import { useTranslations } from 'next-intl'
 import { useCurrentGroup } from '../current-group-context'
 
 export const EditGroup = () => {
   const { groupId } = useCurrentGroup()
-  const t = useTranslations('Settings')
   const { data, isLoading } = trpc.groups.getDetails.useQuery({ groupId })
   const { mutateAsync } = trpc.groups.update.useMutation()
   const utils = trpc.useUtils()
@@ -37,34 +27,7 @@ export const EditGroup = () => {
       />
       <GroupInformation groupId={groupId} />
       <NotificationSettings groupId={groupId} />
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>{t('language')}</CardTitle>
-          <CardDescription>{t('languageDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <LocaleSwitcher />
-        </CardContent>
-      </Card>
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>{t('about')}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
-          <AppVersion />
-          <p>
-            {t('builtWith')}{' '}
-            <a
-              href="https://github.com/spliit-app/spliit"
-              target="_blank"
-              rel="noopener"
-              className="underline"
-            >
-              Spliit
-            </a>
-          </p>
-        </CardContent>
-      </Card>
+      <GlobalSettings />
     </>
   )
 }

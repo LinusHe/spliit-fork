@@ -117,6 +117,24 @@
       "create": "Створити",
       "creating": "Створення...",
       "cancel": "Скасувати"
+    },
+    "CategoryPreset": {
+      "title": "Categories",
+      "description": "Choose which categories should be available in this group.",
+      "presetLabel": "Preset",
+      "presetDescription": "Presets only define the starting category selection for this group.",
+      "categoriesTitle": "Category selection",
+      "categoriesDescription": "Adjust which global categories appear in this group.",
+      "Presets": {
+        "all": "All categories",
+        "custom": "Custom",
+        "travel": "Travel",
+        "outdoorTravel": "Outdoor travel",
+        "household": "Household",
+        "event": "Event / party",
+        "friends": "Friends / everyday",
+        "project": "Project / club"
+      }
     }
   },
   "ExpenseForm": {
@@ -293,7 +311,13 @@
     "empty": "Ще немає інформації про групу"
   },
   "Settings": {
-    "title": "Налаштування"
+    "title": "Налаштування",
+    "globalTitle": "Global settings",
+    "globalDescription": "These settings apply across Spliit, no matter which group you are in.",
+    "appearance": "Appearance",
+    "appearanceDescription": "Shared display preferences for this device.",
+    "theme": "Theme",
+    "themeDescription": "Change light, dark, or system mode."
   },
   "Share": {
     "title": "Поділитися",
@@ -384,6 +408,34 @@
       "Trash": "Сміття",
       "TV/Phone/Internet": "ТБ/Телефон/Інтернет",
       "Water": "Вода"
+    },
+    "Travel": {
+      "heading": "Travel",
+      "Accommodation": "Accommodation",
+      "Package Tour": "Package tour",
+      "Deposit": "Deposit",
+      "Activities": "Activities",
+      "Tickets": "Tickets",
+      "Gear Rental": "Gear rental",
+      "Fees & Permits": "Fees & permits",
+      "Luggage": "Luggage",
+      "Travel Insurance": "Travel insurance",
+      "Ferry/Boat": "Ferry/boat"
+    },
+    "Event": {
+      "heading": "Event",
+      "Venue": "Venue",
+      "Decoration": "Decoration",
+      "Tickets": "Tickets",
+      "Equipment": "Equipment"
+    },
+    "Work": {
+      "heading": "Work",
+      "Software": "Software",
+      "Hardware": "Hardware",
+      "Hosting": "Hosting",
+      "Office Supplies": "Office supplies",
+      "Contractors": "Contractors"
     }
   }
 }

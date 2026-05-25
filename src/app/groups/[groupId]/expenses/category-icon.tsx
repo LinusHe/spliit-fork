@@ -2,9 +2,14 @@ import { Category } from '@prisma/client'
 import {
   Armchair,
   Baby,
+  Backpack,
   Banknote,
+  Bed,
   Bike,
+  BriefcaseBusiness,
+  Building2,
   Bus,
+  Cable,
   Car,
   CarTaxiFront,
   Cat,
@@ -21,21 +26,31 @@ import {
   Hotel,
   Lamp,
   Landmark,
+  Laptop,
   LibraryBig,
   LucideIcon,
   LucideProps,
+  Map,
   Martini,
   Music,
+  Package,
+  Palette,
   ParkingMeter,
+  PartyPopper,
   Phone,
   PiggyBank,
   Plane,
   Plug,
   PlugZap,
+  Receipt,
+  Server,
+  ShieldCheck,
+  Ship,
   Shirt,
   ShoppingCart,
   Stethoscope,
   ThermometerSun,
+  Ticket,
   Train,
   Trash,
   Utensils,
@@ -128,6 +143,44 @@ function getCategoryIcon(category: string): LucideIcon {
       return Plane
     case 'Transportation/Taxi':
       return CarTaxiFront
+    case 'Travel/Accommodation':
+      return Bed
+    case 'Travel/Package Tour':
+      return Map
+    case 'Travel/Deposit':
+      return Receipt
+    case 'Travel/Activities':
+      return PartyPopper
+    case 'Travel/Tickets':
+      return Ticket
+    case 'Travel/Gear Rental':
+      return Backpack
+    case 'Travel/Fees & Permits':
+      return Landmark
+    case 'Travel/Luggage':
+      return Package
+    case 'Travel/Travel Insurance':
+      return ShieldCheck
+    case 'Travel/Ferry/Boat':
+      return Ship
+    case 'Event/Venue':
+      return Building2
+    case 'Event/Decoration':
+      return Palette
+    case 'Event/Tickets':
+      return Ticket
+    case 'Event/Equipment':
+      return Cable
+    case 'Work/Software':
+      return Laptop
+    case 'Work/Hardware':
+      return Plug
+    case 'Work/Hosting':
+      return Server
+    case 'Work/Office Supplies':
+      return BriefcaseBusiness
+    case 'Work/Contractors':
+      return HandHelping
     case 'Utilities/Utilities':
       return Banknote
     case 'Utilities/Cleaning':

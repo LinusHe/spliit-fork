@@ -98,6 +98,24 @@
       "description": "이 설정들은 기기별로 저장되며, 사용자 경험을 맞춤화하는 데 사용돼요.",
       "cancel": "취소",
       "creating": "만드는 중…"
+    },
+    "CategoryPreset": {
+      "title": "Categories",
+      "description": "Choose which categories should be available in this group.",
+      "presetLabel": "Preset",
+      "presetDescription": "Presets only define the starting category selection for this group.",
+      "categoriesTitle": "Category selection",
+      "categoriesDescription": "Adjust which global categories appear in this group.",
+      "Presets": {
+        "all": "All categories",
+        "custom": "Custom",
+        "travel": "Travel",
+        "outdoorTravel": "Outdoor travel",
+        "household": "Household",
+        "event": "Event / party",
+        "friends": "Friends / everyday",
+        "project": "Project / club"
+      }
     }
   },
   "ExpenseForm": {
@@ -307,6 +325,34 @@
       "Trash": "쓰레기 처리비",
       "TV/Phone/Internet": "TV/전화/인터넷 요금",
       "Water": "수도 요금"
+    },
+    "Travel": {
+      "heading": "Travel",
+      "Accommodation": "Accommodation",
+      "Package Tour": "Package tour",
+      "Deposit": "Deposit",
+      "Activities": "Activities",
+      "Tickets": "Tickets",
+      "Gear Rental": "Gear rental",
+      "Fees & Permits": "Fees & permits",
+      "Luggage": "Luggage",
+      "Travel Insurance": "Travel insurance",
+      "Ferry/Boat": "Ferry/boat"
+    },
+    "Event": {
+      "heading": "Event",
+      "Venue": "Venue",
+      "Decoration": "Decoration",
+      "Tickets": "Tickets",
+      "Equipment": "Equipment"
+    },
+    "Work": {
+      "heading": "Work",
+      "Software": "Software",
+      "Hardware": "Hardware",
+      "Hosting": "Hosting",
+      "Office Supplies": "Office supplies",
+      "Contractors": "Contractors"
     }
   },
   "Homepage": {
@@ -325,7 +371,13 @@
     "builtBy": "<author>Sebastien Castiel</author>와 <source>공동 작업자들</source>이 함께 만들었어요"
   },
   "Settings": {
-    "title": "설정"
+    "title": "설정",
+    "globalTitle": "Global settings",
+    "globalDescription": "These settings apply across Spliit, no matter which group you are in.",
+    "appearance": "Appearance",
+    "appearanceDescription": "Shared display preferences for this device.",
+    "theme": "Theme",
+    "themeDescription": "Change light, dark, or system mode."
   },
   "Share": {
     "warningHelp": "그룹 URL을 가진 사람은 누구나 지출 내역을 보고 수정할 수 있어요. 조심해서 공유하세요!",

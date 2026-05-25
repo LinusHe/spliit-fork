@@ -17,7 +17,7 @@ export function EditExpenseForm({
   const { data: groupData } = trpc.groups.get.useQuery({ groupId })
   const group = groupData?.group
 
-  const { data: categoriesData } = trpc.categories.list.useQuery()
+  const { data: categoriesData } = trpc.categories.list.useQuery({ groupId })
   const categories = categoriesData?.categories
 
   const { data: expenseData } = trpc.groups.expenses.get.useQuery({
@@ -35,6 +35,12 @@ export function EditExpenseForm({
   const router = useRouter()
 
   if (!group || !categories || !expense) return null
+
+  const categoriesWithExpenseCategory =
+    expense.category &&
+    !categories.some((category) => category.id === expense.category?.id)
+      ? [...categories, expense.category]
+      : categories
 
   // Build duplicate link with query params
   const duplicateParams = new URLSearchParams()
@@ -55,7 +61,7 @@ export function EditExpenseForm({
     <ExpenseForm
       group={group}
       expense={expense}
-      categories={categories}
+      categories={categoriesWithExpenseCategory}
       duplicateUrl={duplicateUrl}
       onSubmit={async (expenseFormValues, participantId) => {
         await updateExpenseMutateAsync({

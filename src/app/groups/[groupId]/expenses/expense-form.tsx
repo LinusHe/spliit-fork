@@ -55,8 +55,6 @@ import { AppRouterOutput } from '@/trpc/routers/_app'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { RecurrenceRule } from '@prisma/client'
 import { ChevronRight, Copy, Save } from 'lucide-react'
-import { CreateFromReceiptButton } from './create-from-receipt-button'
-import { LocationField } from './location-field'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -66,6 +64,8 @@ import { match } from 'ts-pattern'
 import { DeletePopup } from '../../../../components/delete-popup'
 import { extractCategoryFromTitle } from '../../../../components/expense-form-actions'
 import { Textarea } from '../../../../components/ui/textarea'
+import { CreateFromReceiptButton } from './create-from-receipt-button'
+import { LocationField } from './location-field'
 
 const enforceCurrencyPattern = (value: string) =>
   value
@@ -510,6 +510,7 @@ export function ExpenseForm({
                           setCategoryLoading(true)
                           const { categoryId } = await extractCategoryFromTitle(
                             field.value,
+                            group.id,
                           )
                           form.setValue('category', categoryId)
                           setCategoryLoading(false)

@@ -1,5 +1,5 @@
 'use server'
-import { getCategories } from '@/lib/api'
+import { getCategoriesForGroup } from '@/lib/api'
 import { env } from '@/lib/env'
 import { formatCategoryForAIPrompt } from '@/lib/utils'
 import OpenAI from 'openai'
@@ -14,9 +14,12 @@ const limit = 100
  * Attempt extraction of category from expense title
  * @param description Expense title or description. Only the first characters as defined in {@link limit} will be used.
  */
-export async function extractCategoryFromTitle(description: string) {
+export async function extractCategoryFromTitle(
+  description: string,
+  groupId?: string,
+) {
   'use server'
-  const categories = await getCategories()
+  const categories = await getCategoriesForGroup(groupId)
 
   const defaultPrompt = `
         Task: Receive expense titles. Respond with the most relevant category ID from the list below. Respond with the ID only.
@@ -33,7 +36,9 @@ export async function extractCategoryFromTitle(description: string) {
   const systemPrompt = customPrompt
     ? customPrompt.replace(
         '{{CATEGORIES}}',
-        categories.map((category) => formatCategoryForAIPrompt(category)).join(', '),
+        categories
+          .map((category) => formatCategoryForAIPrompt(category))
+          .join(', '),
       )
     : defaultPrompt
 

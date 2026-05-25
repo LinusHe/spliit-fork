@@ -15,7 +15,7 @@ export function CreateExpenseForm({
   const { data: groupData } = trpc.groups.get.useQuery({ groupId })
   const group = groupData?.group
 
-  const { data: categoriesData } = trpc.categories.list.useQuery()
+  const { data: categoriesData } = trpc.categories.list.useQuery({ groupId })
   const categories = categoriesData?.categories
 
   const { mutateAsync: createExpenseMutateAsync } =

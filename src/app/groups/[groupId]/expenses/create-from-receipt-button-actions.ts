@@ -1,16 +1,17 @@
 'use server'
-import { getCategories } from '@/lib/api'
+import { getCategoriesForGroup } from '@/lib/api'
 import { env } from '@/lib/env'
 import { formatCategoryForAIPrompt } from '@/lib/utils'
+import { readFile, unlink } from 'fs/promises'
 import OpenAI from 'openai'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources/index.mjs'
-import { readFile, unlink } from 'fs/promises'
 
 const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY })
 
 export async function extractExpenseInformationFromImage(
   filePath: string,
   mimeType: string,
+  groupId?: string,
 ) {
   'use server'
 
@@ -24,7 +25,7 @@ export async function extractExpenseInformationFromImage(
     await unlink(filePath).catch(() => {})
   }
 
-  const categories = await getCategories()
+  const categories = await getCategoriesForGroup(groupId)
 
   const body: ChatCompletionCreateParamsNonStreaming = {
     model: env.CATEGORY_EXTRACT_MODEL || 'gpt-4o-mini',
@@ -55,20 +56,16 @@ Return the amount, the category, the date and the title with just a comma betwee
   }
   const completion = await openai.chat.completions.create(body)
 
-  const [amountString, categoryId, date, ...titleParts] =
-    completion.choices.at(0)?.message.content?.split(',') ?? [
-      null,
-      null,
-      null,
-      null,
-    ]
+  const [amountString, categoryId, date, ...titleParts] = completion.choices
+    .at(0)
+    ?.message.content?.split(',') ?? [null, null, null, null]
   const title = titleParts.join(',').trim() || null
   const parsedDate = date?.trim()
   const today = new Date().toISOString().split('T')[0]
   return {
     amount: Number(amountString),
     categoryId: categoryId?.trim() ?? null,
-    date: (!parsedDate || parsedDate === 'none') ? today : parsedDate,
+    date: !parsedDate || parsedDate === 'none' ? today : parsedDate,
     title,
   }
 }
@@ -91,6 +88,7 @@ export type ReceiptItemsExtractedInfo = ReceiptExtractedInfo & {
 export async function extractExpenseWithItemsFromImage(
   filePath: string,
   mimeType: string,
+  groupId?: string,
 ): Promise<ReceiptItemsExtractedInfo> {
   'use server'
 
@@ -104,7 +102,7 @@ export async function extractExpenseWithItemsFromImage(
     await unlink(filePath).catch(() => {})
   }
 
-  const categories = await getCategories()
+  const categories = await getCategoriesForGroup(groupId)
   const categoryList = categories
     .map((c) => formatCategoryForAIPrompt(c))
     .join(', ')
@@ -162,7 +160,7 @@ Rules:
     return {
       title: parsed.title || null,
       amount: Number(parsed.amount) || 0,
-      date: (!parsedDate || parsedDate === 'none') ? today : parsedDate,
+      date: !parsedDate || parsedDate === 'none' ? today : parsedDate,
       categoryId: String(parsed.categoryId ?? ''),
       items: Array.isArray(parsed.items)
         ? parsed.items.map((item: any) => ({

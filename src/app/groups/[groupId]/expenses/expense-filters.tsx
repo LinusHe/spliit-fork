@@ -73,7 +73,7 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
     setDraft(filters)
   }, [filters])
 
-  const { data: categoriesData } = trpc.categories.list.useQuery()
+  const { data: categoriesData } = trpc.categories.list.useQuery({ groupId })
   const categories = categoriesData?.categories ?? []
 
   // Categories grouped
@@ -118,17 +118,14 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
 
   const activeFilterCount = countActiveFilters(filters)
 
-  const addCategory = useCallback(
-    (id: number) => {
-      setDraft((d) => {
-        const existing = d.categoryIds ?? []
-        if (existing.includes(id)) return d
-        return { ...d, categoryIds: [...existing, id] }
-      })
-      setCatPickerOpen(false)
-    },
-    [],
-  )
+  const addCategory = useCallback((id: number) => {
+    setDraft((d) => {
+      const existing = d.categoryIds ?? []
+      if (existing.includes(id)) return d
+      return { ...d, categoryIds: [...existing, id] }
+    })
+    setCatPickerOpen(false)
+  }, [])
 
   const removeCategory = useCallback((id: number) => {
     setDraft((d) => {
@@ -202,10 +199,7 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
                       key={cat.id}
                       className="inline-flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-medium pl-2 pr-1 py-1 rounded-full"
                     >
-                      <CategoryIcon
-                        category={cat}
-                        className="w-3.5 h-3.5"
-                      />
+                      <CategoryIcon category={cat} className="w-3.5 h-3.5" />
                       {tCat(`${cat.grouping}.${cat.name}`)}
                       <button
                         type="button"
@@ -231,7 +225,9 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
                   {t('filterAddCategory')}
                 </span>
                 <ChevronDown
-                  className={`w-4 h-4 text-muted-foreground transition-transform ${catPickerOpen ? 'rotate-180' : ''}`}
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${
+                    catPickerOpen ? 'rotate-180' : ''
+                  }`}
                 />
               </Button>
 
@@ -257,7 +253,9 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
                               return (
                                 <CommandItem
                                   key={cat.id}
-                                  value={`${cat.id} ${tCat(`${cat.grouping}.heading`)} ${tCat(`${cat.grouping}.${cat.name}`)}`}
+                                  value={`${cat.id} ${tCat(
+                                    `${cat.grouping}.heading`,
+                                  )} ${tCat(`${cat.grouping}.${cat.name}`)}`}
                                   onSelect={() => {
                                     if (isSelected) {
                                       removeCategory(cat.id)
@@ -265,9 +263,7 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
                                       addCategory(cat.id)
                                     }
                                   }}
-                                  className={
-                                    isSelected ? 'opacity-50' : ''
-                                  }
+                                  className={isSelected ? 'opacity-50' : ''}
                                 >
                                   <div className="flex items-center gap-3">
                                     <CategoryIcon
@@ -292,9 +288,7 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
-                <label className="text-sm font-medium">
-                  {t('filterDate')}
-                </label>
+                <label className="text-sm font-medium">{t('filterDate')}</label>
               </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
                 <Input
@@ -308,7 +302,9 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
                     }))
                   }
                 />
-                <span className="hidden text-muted-foreground text-sm sm:inline">–</span>
+                <span className="hidden text-muted-foreground text-sm sm:inline">
+                  –
+                </span>
                 <Input
                   type="date"
                   className="min-w-0 max-w-full text-base"
@@ -428,9 +424,7 @@ export function ExpenseFilterDrawer({ filters, onChange }: Props) {
                   <Button
                     type="button"
                     variant={
-                      draft.participantId === undefined
-                        ? 'default'
-                        : 'outline'
+                      draft.participantId === undefined ? 'default' : 'outline'
                     }
                     size="sm"
                     onClick={() =>

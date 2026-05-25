@@ -3,8 +3,6 @@
 import { CategoryIcon } from '@/app/groups/[groupId]/expenses/category-icon'
 import {
   ReceiptExtractedInfo,
-  ReceiptItem,
-  ReceiptItemsExtractedInfo,
   extractExpenseInformationFromImage,
   extractExpenseWithItemsFromImage,
 } from '@/app/groups/[groupId]/expenses/create-from-receipt-button-actions'
@@ -40,7 +38,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
-import { ToastAction } from '@/components/ui/toast'
 import { useToast } from '@/components/ui/use-toast'
 import { type Currency } from '@/lib/currency'
 import { useActiveUser, useMediaQuery } from '@/lib/hooks'
@@ -150,7 +147,7 @@ export function CreateFromReceiptButton() {
 
 function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
   const { group, groupId } = useCurrentGroup()
-  const { data: categoriesData } = trpc.categories.list.useQuery()
+  const { data: categoriesData } = trpc.categories.list.useQuery({ groupId })
   const categories = categoriesData?.categories
   const createExpenseMutation = trpc.groups.expenses.create.useMutation()
 
@@ -176,11 +173,9 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
 
   const formatReceiptDate = (dateStr: string) => {
     try {
-      return formatDateOnly(
-        new Date(`${dateStr}T12:00:00.000Z`),
-        locale,
-        { dateStyle: 'medium' },
-      )
+      return formatDateOnly(new Date(`${dateStr}T12:00:00.000Z`), locale, {
+        dateStyle: 'medium',
+      })
     } catch {
       return dateStr
     }
@@ -232,6 +227,7 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
         const result = await extractExpenseWithItemsFromImage(
           filePath,
           file.type,
+          groupId,
         )
         setReceiptInfo(result)
         if (result.items.length > 0) {
@@ -247,6 +243,7 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
         const result = await extractExpenseInformationFromImage(
           filePath,
           file.type,
+          groupId,
         )
         setReceiptInfo(result)
       }
@@ -319,7 +316,11 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
   const handleSimpleContinue = () => {
     if (!receiptInfo || !group) return
     router.push(
-      `/groups/${group.id}/expenses/create?amount=${receiptInfo.amount}&categoryId=${receiptInfo.categoryId}&date=${receiptInfo.date}&title=${encodeURIComponent(receiptInfo.title ?? '')}`,
+      `/groups/${group.id}/expenses/create?amount=${
+        receiptInfo.amount
+      }&categoryId=${receiptInfo.categoryId}&date=${
+        receiptInfo.date
+      }&title=${encodeURIComponent(receiptInfo.title ?? '')}`,
     )
     onClose()
   }
@@ -372,7 +373,9 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
       }
 
       toast({
-        title: `${expensePreview.length} ${t('Dialog.expensesCreated', { count: expensePreview.length })}`,
+        title: `${expensePreview.length} ${t('Dialog.expensesCreated', {
+          count: expensePreview.length,
+        })}`,
       })
 
       onClose()
@@ -453,10 +456,7 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
               {t('Dialog.extractItemsSub')}
             </div>
           </div>
-          <Switch
-            checked={extractItems}
-            onCheckedChange={setExtractItems}
-          />
+          <Switch checked={extractItems} onCheckedChange={setExtractItems} />
         </div>
       </div>
     )
@@ -468,9 +468,7 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
       <div className="flex flex-col items-center justify-center gap-3 py-12 pb-16">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
         <div className="text-sm text-muted-foreground">
-          {extractItems
-            ? t('Dialog.analyzingItems')
-            : t('Dialog.analyzing')}
+          {extractItems ? t('Dialog.analyzingItems') : t('Dialog.analyzing')}
         </div>
       </div>
     )
@@ -497,10 +495,7 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
             <span>{formatReceiptDate(receiptInfo.date)}</span>
             {cat ? (
               <span className="flex items-center gap-1">
-                <CategoryIcon
-                  category={cat}
-                  className="inline w-3.5 h-3.5"
-                />
+                <CategoryIcon category={cat} className="inline w-3.5 h-3.5" />
                 {getCategoryLabel(receiptInfo.categoryId)}
               </span>
             ) : null}
@@ -525,7 +520,8 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
         <div className="flex gap-3 text-sm text-muted-foreground mt-1">
           {currency && receiptInfo && (
             <span>
-              {t('Dialog.total')}: {formatCurrency(currency, receiptInfo.amount, locale, true)}
+              {t('Dialog.total')}:{' '}
+              {formatCurrency(currency, receiptInfo.amount, locale, true)}
             </span>
           )}
           <span>{receiptInfo && formatReceiptDate(receiptInfo.date)}</span>
@@ -602,8 +598,7 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
                 ? t('Dialog.everyone')
                 : exp.participantIds
                     .map(
-                      (id) =>
-                        participants.find((p) => p.id === id)?.name ?? id,
+                      (id) => participants.find((p) => p.id === id)?.name ?? id,
                     )
                     .join(', ')
             return (
@@ -613,9 +608,7 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
                   {catLabel && expensePreview.length > 1
                     ? ` — ${catLabel}`
                     : ''}
-                  <span className="text-muted-foreground ml-1">
-                    ({pNames})
-                  </span>
+                  <span className="text-muted-foreground ml-1">({pNames})</span>
                 </span>
                 <span className="font-medium">{exp.amount.toFixed(2)}€</span>
               </div>
@@ -626,7 +619,11 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
 
       {/* Action buttons */}
       <div className="flex gap-2 pt-1 pb-4">
-        <Button variant="outline" className="flex-1" onClick={handleSimpleContinue}>
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={handleSimpleContinue}
+        >
           {t('Dialog.withoutItems')}
         </Button>
         <Button
@@ -682,7 +679,9 @@ function ItemCategoryPicker({
             {groupCategories.map((category) => (
               <CommandItem
                 key={category.id}
-                value={`${category.id} ${tCat(`${category.grouping}.heading`)} ${tCat(`${category.grouping}.${category.name}`)}`}
+                value={`${category.id} ${tCat(
+                  `${category.grouping}.heading`,
+                )} ${tCat(`${category.grouping}.${category.name}`)}`}
                 onSelect={() => {
                   onChange(String(category.id))
                   setOpen(false)
@@ -776,10 +775,10 @@ function ItemCard({
     item.participantIds.length === 0
       ? t('Dialog.everyone')
       : item.participantIds.length === participants.length
-        ? t('Dialog.everyone')
-        : item.participantIds
-            .map((id) => participants.find((p) => p.id === id)?.name ?? '?')
-            .join(', ')
+      ? t('Dialog.everyone')
+      : item.participantIds
+          .map((id) => participants.find((p) => p.id === id)?.name ?? '?')
+          .join(', ')
 
   const selectedCategory = item.categoryId
     ? categories.find((c) => String(c.id) === item.categoryId)
@@ -788,9 +787,7 @@ function ItemCard({
   const categoryLabel = selectedCategory
     ? (() => {
         try {
-          return tCat(
-            `${selectedCategory.grouping}.${selectedCategory.name}`,
-          )
+          return tCat(`${selectedCategory.grouping}.${selectedCategory.name}`)
         } catch {
           return selectedCategory.name
         }
@@ -816,10 +813,7 @@ function ItemCard({
             {selectedCategory && (
               <span className="flex items-center gap-1">
                 ·{' '}
-                <CategoryIcon
-                  category={selectedCategory}
-                  className="w-3 h-3"
-                />
+                <CategoryIcon category={selectedCategory} className="w-3 h-3" />
                 {categoryLabel}
               </span>
             )}
@@ -848,9 +842,7 @@ function ItemCard({
             />
             <Input
               value={item.price || ''}
-              onChange={(e) =>
-                onUpdate({ price: Number(e.target.value) || 0 })
-              }
+              onChange={(e) => onUpdate({ price: Number(e.target.value) || 0 })}
               placeholder="0.00"
               type="number"
               step="0.01"

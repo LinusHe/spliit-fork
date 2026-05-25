@@ -1,10 +1,6 @@
 'use client'
 
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from '@/components/ui/drawer'
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer'
 import { RuntimeFeatureFlags } from '@/lib/featureFlags'
 import { amountAsDecimal, getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
@@ -63,7 +59,7 @@ function EditExpenseInDrawer({
   const { groupId, group } = useCurrentGroup()
   const utils = trpc.useUtils()
 
-  const { data: categoriesData } = trpc.categories.list.useQuery()
+  const { data: categoriesData } = trpc.categories.list.useQuery({ groupId })
   const categories = categoriesData?.categories
 
   const { data: expenseData } = trpc.groups.expenses.get.useQuery({
@@ -84,6 +80,12 @@ function EditExpenseInDrawer({
       </div>
     )
   }
+
+  const categoriesWithExpenseCategory =
+    expense.category &&
+    !categories.some((category) => category.id === expense.category?.id)
+      ? [...categories, expense.category]
+      : categories
 
   // Build duplicate params
   const duplicateParams = new URLSearchParams()
@@ -110,7 +112,7 @@ function EditExpenseInDrawer({
     <ExpenseForm
       group={group}
       expense={expense}
-      categories={categories}
+      categories={categoriesWithExpenseCategory}
       onDuplicate={handleDuplicate}
       onSubmit={async (expenseFormValues, participantId) => {
         await updateExpenseMutateAsync({
@@ -148,7 +150,7 @@ function CreateExpenseInDrawer({
   const { groupId, group } = useCurrentGroup()
   const utils = trpc.useUtils()
 
-  const { data: categoriesData } = trpc.categories.list.useQuery()
+  const { data: categoriesData } = trpc.categories.list.useQuery({ groupId })
   const categories = categoriesData?.categories
 
   const { mutateAsync: createExpenseMutateAsync } =

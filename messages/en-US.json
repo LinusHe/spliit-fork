@@ -127,6 +127,24 @@
       "editDescription": "All amounts and balances will be in this currency. Changing this will NOT convert expenses already entered, except when the currency has different \"minor units\" than the current one (e.g. changing from US Dollar to Japanese Yen)",
       "customOption": "Custom"
     },
+    "CategoryPreset": {
+      "title": "Categories",
+      "description": "Choose which categories should be available in this group.",
+      "presetLabel": "Preset",
+      "presetDescription": "Presets only define the starting category selection for this group.",
+      "categoriesTitle": "Category selection",
+      "categoriesDescription": "Adjust which global categories appear in this group.",
+      "Presets": {
+        "all": "All categories",
+        "custom": "Custom",
+        "travel": "Travel",
+        "outdoorTravel": "Outdoor travel",
+        "household": "Household",
+        "event": "Event / party",
+        "friends": "Friends / everyday",
+        "project": "Project / club"
+      }
+    },
     "Participants": {
       "title": "Participants",
       "description": "Enter the name for each participant.",
@@ -410,8 +428,14 @@
   },
   "Settings": {
     "title": "Settings",
+    "globalTitle": "Global settings",
+    "globalDescription": "These settings apply across Spliit, no matter which group you are in.",
+    "appearance": "Appearance",
+    "appearanceDescription": "Shared display preferences for this device.",
     "language": "Language",
     "languageDescription": "Change the display language.",
+    "theme": "Theme",
+    "themeDescription": "Change light, dark, or system mode.",
     "about": "About",
     "builtWith": "Built with"
   },
@@ -496,6 +520,34 @@
       "Parking": "Parking",
       "Plane": "Plane",
       "Taxi": "Taxi"
+    },
+    "Travel": {
+      "heading": "Travel",
+      "Accommodation": "Accommodation",
+      "Package Tour": "Package tour",
+      "Deposit": "Deposit",
+      "Activities": "Activities",
+      "Tickets": "Tickets",
+      "Gear Rental": "Gear rental",
+      "Fees & Permits": "Fees & permits",
+      "Luggage": "Luggage",
+      "Travel Insurance": "Travel insurance",
+      "Ferry/Boat": "Ferry/boat"
+    },
+    "Event": {
+      "heading": "Event",
+      "Venue": "Venue",
+      "Decoration": "Decoration",
+      "Tickets": "Tickets",
+      "Equipment": "Equipment"
+    },
+    "Work": {
+      "heading": "Work",
+      "Software": "Software",
+      "Hardware": "Hardware",
+      "Hosting": "Hosting",
+      "Office Supplies": "Office supplies",
+      "Contractors": "Contractors"
     },
     "Utilities": {
       "heading": "Utilities",
