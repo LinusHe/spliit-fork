@@ -53,8 +53,11 @@ export function RecentGroupListCard({
   const activeUser = useActiveUser(group.id)
   const balance =
     activeUser && activeUser !== 'None'
-      ? groupDetail?.balances[activeUser]?.total
+      ? groupDetail?.balances[activeUser]?.total ?? 0
       : undefined
+  const isSettled = groupDetail
+    ? Object.keys(groupDetail.balances).length === 0
+    : false
 
   return (
     <li key={group.id}>
@@ -164,6 +167,7 @@ export function RecentGroupListCard({
                   <GroupBalanceStatus
                     balance={balance}
                     groupDetail={groupDetail}
+                    isSettled={isSettled}
                     locale={locale}
                   />
                 </div>
@@ -184,15 +188,17 @@ export function RecentGroupListCard({
 function GroupBalanceStatus({
   balance,
   groupDetail,
+  isSettled,
   locale,
 }: {
   balance?: number
   groupDetail: AppRouterOutput['groups']['list']['groups'][number]
+  isSettled: boolean
   locale: string
 }) {
   const t = useTranslations('Groups.BalanceStatus')
 
-  if (balance === undefined) {
+  if (balance === undefined && !isSettled) {
     return (
       <span className="inline-flex items-center gap-1 text-muted-foreground">
         <UserRound className="h-3 w-3" />
@@ -202,15 +208,16 @@ function GroupBalanceStatus({
   }
 
   const currency = getCurrencyFromGroup(groupDetail)
-  const amount = formatCurrency(currency, Math.abs(balance), locale)
+  const effectiveBalance = balance ?? 0
+  const amount = formatCurrency(currency, Math.abs(effectiveBalance), locale)
   const status =
-    balance === 0
+    isSettled || effectiveBalance === 0
       ? {
           icon: CircleCheck,
           label: t('settled'),
           className: 'text-emerald-600 dark:text-emerald-400',
         }
-      : balance > 0
+      : effectiveBalance > 0
       ? {
           icon: TrendingUp,
           label: t('getsBack', { amount }),

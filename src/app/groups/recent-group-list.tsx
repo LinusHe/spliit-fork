@@ -237,7 +237,11 @@ function getGroupBalance(
   activeUserId: string | undefined,
 ) {
   if (!groupDetail || !activeUserId || activeUserId === 'None') return undefined
-  return groupDetail.balances[activeUserId]?.total
+  return groupDetail.balances[activeUserId]?.total ?? 0
+}
+
+function isGroupSettled(groupDetail: GroupDetail | undefined) {
+  return groupDetail ? Object.keys(groupDetail.balances).length === 0 : false
 }
 
 function filterAndSortGroups({
@@ -264,7 +268,7 @@ function filterAndSortGroups({
       const matchesQuery = group.name
         .toLocaleLowerCase()
         .includes(normalizedQuery)
-      const isSettled = balance === 0
+      const isSettled = balance === 0 || isGroupSettled(groupDetail)
       return matchesQuery && (!hideSettled || !isSettled)
     })
     .sort((a, b) => {
