@@ -8,10 +8,12 @@ import {
   ExpenseFilterDrawer,
   type ExpenseFilters,
 } from './expense-filters'
+import { useExpenseDrawerOptional } from './expense-drawer-context'
 import { getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
 import dayjs, { type Dayjs } from 'dayjs'
 import 'dayjs/locale/de'
+import { Plus } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { forwardRef, useEffect, useMemo, useState } from 'react'
@@ -64,7 +66,9 @@ function getGroupedExpensesByDate(expenses: ExpensesType) {
 }
 
 export function ExpenseList() {
+  const t = useTranslations('Expenses')
   const { groupId, group } = useCurrentGroup()
+  const drawerCtx = useExpenseDrawerOptional()
   const [searchText, setSearchText] = useState('')
   const [debouncedSearchText] = useDebounce(searchText, 300)
   const [filters, setFilters] = useState<ExpenseFilters>({})
@@ -94,7 +98,7 @@ export function ExpenseList() {
 
   return (
     <>
-      <div className="flex items-center gap-2 mx-4 sm:mx-6 mb-6">
+      <div className="flex items-center gap-2 mx-4 sm:mx-6">
         <div className="flex-1">
           <SearchBar
             onValueChange={(value) => setSearchText(value)}
@@ -103,6 +107,30 @@ export function ExpenseList() {
         </div>
         <ExpenseFilterDrawer filters={filters} onChange={setFilters} />
       </div>
+      <div className="hidden md:flex mx-4 sm:mx-6 mt-3 mb-4">
+        {drawerCtx ? (
+          <Button
+            variant="outline"
+            className="w-full justify-center gap-2"
+            onClick={() => drawerCtx.openCreateExpense()}
+          >
+            <Plus className="w-4 h-4" />
+            {t('create')}
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            asChild
+            className="w-full justify-center gap-2"
+          >
+            <Link href={`/groups/${groupId}/expenses/create`}>
+              <Plus className="w-4 h-4" />
+              {t('create')}
+            </Link>
+          </Button>
+        )}
+      </div>
+      <div className="md:hidden h-6" />
       <ExpenseListForSearch
         groupId={groupId}
         searchText={debouncedSearchText}
