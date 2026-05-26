@@ -94,7 +94,7 @@ export function ExpenseList() {
 
   return (
     <>
-      <div className="flex items-center gap-2 mx-4 sm:mx-6">
+      <div className="flex items-center gap-2 mx-4 sm:mx-6 mb-6">
         <div className="flex-1">
           <SearchBar
             onValueChange={(value) => setSearchText(value)}
@@ -232,7 +232,7 @@ const ExpenseListForSearch = ({
           <div key={expenseGroup}>
             <div
               className={
-                'text-muted-foreground text-xs pl-4 sm:pl-6 py-1 font-semibold sticky top-14 z-10 bg-white dark:bg-[#1b1917]'
+                'text-muted-foreground text-xs pl-4 sm:pl-6 py-1 font-semibold sticky top-14 md:top-[6.5rem] z-10 bg-white dark:bg-[#1b1917]'
               }
             >
               {t(`Groups.${expenseGroup}`)}
