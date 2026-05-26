@@ -16,6 +16,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { useMediaQuery } from '@/lib/hooks'
+import { cn } from '@/lib/utils'
 import { Category } from '@prisma/client'
 import { useTranslations } from 'next-intl'
 import { forwardRef, useEffect, useState } from 'react'
@@ -80,7 +81,7 @@ export function CategorySelector({
           isLoading={isLoading}
         />
       </DrawerTrigger>
-      <DrawerContent className="p-0">
+      <DrawerContent className="p-0 h-[85vh]">
         <CategoryCommand
           categories={categories}
           onValueChange={(id) => {
@@ -88,6 +89,8 @@ export function CategorySelector({
             onValueChange(id)
             setOpen(false)
           }}
+          className="flex-1 min-h-0"
+          scrollClassName="flex-1 max-h-none"
         />
       </DrawerContent>
     </Drawer>
@@ -97,9 +100,13 @@ export function CategorySelector({
 function CategoryCommand({
   categories,
   onValueChange,
+  className,
+  scrollClassName,
 }: {
   categories: Category[]
   onValueChange: (categoryId: Category['id']) => void
+  className?: string
+  scrollClassName?: string
 }) {
   const t = useTranslations('Categories')
   const categoriesByGroup = categories.reduce<Record<string, Category[]>>(
@@ -111,10 +118,15 @@ function CategoryCommand({
   )
 
   return (
-    <Command>
+    <Command className={className}>
       <CommandInput placeholder={t('search')} className="text-base" />
       <CommandEmpty>{t('noCategory')}</CommandEmpty>
-      <div className="w-full max-h-[300px] overflow-y-auto">
+      <div
+        className={cn(
+          'w-full max-h-[300px] overflow-y-auto',
+          scrollClassName,
+        )}
+      >
         {Object.entries(categoriesByGroup).map(
           ([group, groupCategories], index) => (
             <CommandGroup key={index} heading={t(`${group}.heading`)}>
