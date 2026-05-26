@@ -1,6 +1,8 @@
 'use client'
 
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { useMediaQuery } from '@/lib/hooks'
 import { RuntimeFeatureFlags } from '@/lib/featureFlags'
 import { amountAsDecimal, getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
@@ -15,6 +17,47 @@ export function ExpenseDrawer({
 }) {
   const { state, closeDrawer } = useExpenseDrawer()
   const isOpen = state.mode !== 'closed'
+  const isDesktop = useMediaQuery('(min-width: 768px)')
+
+  const title = state.mode === 'edit' ? 'Edit Expense' : 'Create Expense'
+
+  const body = (
+    <>
+      {state.mode === 'edit' && (
+        <EditExpenseInDrawer
+          expenseId={state.expenseId}
+          runtimeFeatureFlags={runtimeFeatureFlags}
+        />
+      )}
+      {state.mode === 'create' && (
+        <CreateExpenseInDrawer
+          searchParams={state.params}
+          runtimeFeatureFlags={runtimeFeatureFlags}
+        />
+      )}
+    </>
+  )
+
+  if (isDesktop) {
+    return (
+      <Sheet
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) closeDrawer()
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-xl p-0 flex flex-col gap-0"
+        >
+          <SheetTitle className="sr-only">{title}</SheetTitle>
+          <div className="overflow-y-auto overscroll-contain px-6 py-6">
+            {body}
+          </div>
+        </SheetContent>
+      </Sheet>
+    )
+  }
 
   return (
     <Drawer
@@ -26,22 +69,9 @@ export function ExpenseDrawer({
       repositionInputs={false}
     >
       <DrawerContent className="max-h-[85vh] overflow-hidden">
-        <DrawerTitle className="sr-only">
-          {state.mode === 'edit' ? 'Edit Expense' : 'Create Expense'}
-        </DrawerTitle>
+        <DrawerTitle className="sr-only">{title}</DrawerTitle>
         <div className="overflow-y-auto overscroll-contain px-4 pb-8 pt-2">
-          {state.mode === 'edit' && (
-            <EditExpenseInDrawer
-              expenseId={state.expenseId}
-              runtimeFeatureFlags={runtimeFeatureFlags}
-            />
-          )}
-          {state.mode === 'create' && (
-            <CreateExpenseInDrawer
-              searchParams={state.params}
-              runtimeFeatureFlags={runtimeFeatureFlags}
-            />
-          )}
+          {body}
         </div>
       </DrawerContent>
     </Drawer>
