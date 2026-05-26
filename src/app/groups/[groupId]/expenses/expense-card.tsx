@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { getGroupExpenses } from '@/lib/api'
 import { Currency } from '@/lib/currency'
 import { cn, formatCurrency, formatDateOnly } from '@/lib/utils'
-import { ChevronRight, MapPin } from 'lucide-react'
+import { ArrowLeftRight, ChevronRight, MapPin } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { Fragment } from 'react'
@@ -72,18 +72,26 @@ export function ExpenseCard({
     <div
       key={expense.id}
       className={cn(
-        'flex justify-between sm:mx-6 px-4 sm:rounded-lg sm:pr-2 sm:pl-4 py-4 text-sm cursor-pointer hover:bg-accent gap-1 items-stretch',
-        expense.isReimbursement && 'italic',
+        'flex justify-between sm:mx-6 px-4 sm:rounded-lg sm:pr-2 sm:pl-4 py-4 text-sm cursor-pointer gap-1 items-stretch transition-colors',
+        expense.isReimbursement
+          ? 'bg-muted/40 hover:bg-muted/70 text-muted-foreground'
+          : 'hover:bg-accent',
       )}
       onClick={handleClick}
     >
-      <CategoryIcon
-        category={expense.category}
-        className="w-4 h-4 mr-2 mt-0.5 text-muted-foreground"
-      />
+      {expense.isReimbursement ? (
+        <ArrowLeftRight className="w-4 h-4 mr-2 mt-0.5 text-muted-foreground shrink-0" />
+      ) : (
+        <CategoryIcon
+          category={expense.category}
+          className="w-4 h-4 mr-2 mt-0.5 text-muted-foreground"
+        />
+      )}
       <div className="flex-1">
-        <div className={cn('mb-1', expense.isReimbursement && 'italic')}>
-          {expense.title}
+        <div className="mb-1 flex items-center gap-2">
+          <span className={cn(expense.isReimbursement && 'italic')}>
+            {expense.title}
+          </span>
         </div>
         <div className="text-xs text-muted-foreground">
           <Participants expense={expense} participantCount={participantCount} />
@@ -102,7 +110,7 @@ export function ExpenseCard({
         <div
           className={cn(
             'tabular-nums whitespace-nowrap',
-            expense.isReimbursement ? 'italic' : 'font-bold',
+            expense.isReimbursement ? 'italic font-medium' : 'font-bold',
           )}
         >
           {formatCurrency(currency, expense.amount, locale)}
