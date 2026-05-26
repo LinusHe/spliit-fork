@@ -54,7 +54,7 @@ export function BottomNav({ groupId }: { groupId: string }) {
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)] md:hidden">
       <div className="mx-auto max-w-md px-4 pb-3">
         <div className="flex items-center justify-around rounded-2xl border bg-background/95 backdrop-blur-md shadow-lg px-2 py-1.5">
           {items.map((item) => {

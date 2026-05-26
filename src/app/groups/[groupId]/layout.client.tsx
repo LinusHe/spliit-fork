@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import { PropsWithChildren, useEffect } from 'react'
 import { BottomNav } from './bottom-nav'
 import { CurrentGroupProvider } from './current-group-context'
+import { DesktopNav } from './desktop-nav'
 import { ExpenseDrawerProvider } from './expenses/expense-drawer-context'
 import { ExpenseDrawer } from './expenses/expense-drawer'
 import { GroupHeader } from './group-header'
@@ -53,7 +54,8 @@ export function GroupLayoutClient({
       <CurrentGroupProvider {...props}>
         <ExpenseDrawerProvider>
           <GroupHeader />
-          {children}
+          <DesktopNav groupId={groupId} />
+          <div className="md:pt-12">{children}</div>
         </ExpenseDrawerProvider>
       </CurrentGroupProvider>
     )
@@ -63,9 +65,10 @@ export function GroupLayoutClient({
     <CurrentGroupProvider {...props}>
       <ExpenseDrawerProvider>
         <GroupHeader />
-        {children}
-        {/* Bottom padding for the floating nav */}
-        <div className="h-24" />
+        <DesktopNav groupId={groupId} />
+        <div className="md:pt-12">{children}</div>
+        {/* Bottom padding for the floating nav on mobile */}
+        <div className="h-24 md:hidden" />
         <BottomNav groupId={groupId} />
         <NotificationPrompt groupId={groupId} />
         <SaveGroupLocally />
