@@ -80,7 +80,13 @@ export function CurrencySelector({
           isLoading={isLoading}
         />
       </DrawerTrigger>
-      <DrawerContent className="p-0">
+      <DrawerContent
+        className="p-0"
+        // Prevent auto-focusing the search input on open: on mobile that pops up
+        // the on-screen keyboard, which shifts the layout while the user is tapping
+        // and causes taps to land on the wrong item (or nothing).
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <CurrencyCommand
           currencies={currencies}
           onValueChange={(id) => {
@@ -131,15 +137,13 @@ function CurrencyCommand({
       <CommandEmpty>{t('noCurrency')}</CommandEmpty>
       <div className="w-full max-h-[300px] overflow-y-auto">
         {Object.entries(currenciesByGroup).map(
-          ([group, groupCurrencies], index) => (
-            <CommandGroup key={index} heading={t(`${group}.heading`)}>
+          ([group, groupCurrencies]) => (
+            <CommandGroup key={group} heading={t(`${group}.heading`)}>
               {groupCurrencies.map((currency) => (
                 <CommandItem
                   key={currency.code}
                   value={`${currency.code} ${currency.name} ${currency.symbol}`}
-                  onSelect={(currentValue) => {
-                    onValueChange(currency.code)
-                  }}
+                  onSelect={() => onValueChange(currency.code)}
                 >
                   <CurrencyLabel currency={currency} />
                 </CommandItem>

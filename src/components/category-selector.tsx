@@ -81,7 +81,13 @@ export function CategorySelector({
           isLoading={isLoading}
         />
       </DrawerTrigger>
-      <DrawerContent className="p-0 h-[85vh]">
+      <DrawerContent
+        className="p-0 h-[85vh]"
+        // Prevent auto-focusing the search input on open: on mobile that pops up
+        // the on-screen keyboard, which shifts the layout while the user is tapping
+        // and causes taps to land on the wrong category (or nothing).
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <CategoryCommand
           categories={categories}
           onValueChange={(id) => {
@@ -128,18 +134,15 @@ function CategoryCommand({
         )}
       >
         {Object.entries(categoriesByGroup).map(
-          ([group, groupCategories], index) => (
-            <CommandGroup key={index} heading={t(`${group}.heading`)}>
+          ([group, groupCategories]) => (
+            <CommandGroup key={group} heading={t(`${group}.heading`)}>
               {groupCategories.map((category) => (
                 <CommandItem
                   key={category.id}
                   value={`${category.id} ${t(
                     `${category.grouping}.heading`,
                   )} ${t(`${category.grouping}.${category.name}`)}`}
-                  onSelect={(currentValue) => {
-                    const id = Number(currentValue.split(' ')[0])
-                    onValueChange(id)
-                  }}
+                  onSelect={() => onValueChange(category.id)}
                 >
                   <CategoryLabel category={category} />
                 </CommandItem>

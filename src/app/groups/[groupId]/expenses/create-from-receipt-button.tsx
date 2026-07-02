@@ -736,7 +736,15 @@ function ItemCategoryPicker({
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
-      <DrawerContent className="p-0">{commandContent}</DrawerContent>
+      <DrawerContent
+        className="p-0"
+        // Prevent auto-focusing the search input on open: on mobile that pops up
+        // the on-screen keyboard, which shifts the layout while the user is tapping
+        // and causes taps to land on the wrong item (or nothing).
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        {commandContent}
+      </DrawerContent>
     </Drawer>
   )
 }

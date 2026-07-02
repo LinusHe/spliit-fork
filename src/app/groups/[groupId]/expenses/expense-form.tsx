@@ -512,14 +512,28 @@ export function ExpenseForm({
                       {...field}
                       onBlur={async () => {
                         field.onBlur() // avoid skipping other blur event listeners since we overwrite `field`
-                        if (runtimeFeatureFlags.enableCategoryExtract) {
+                        if (
+                          runtimeFeatureFlags.enableCategoryExtract &&
+                          field.value?.trim()
+                        ) {
                           setCategoryLoading(true)
-                          const { categoryId } = await extractCategoryFromTitle(
-                            field.value,
-                            group.id,
-                          )
-                          form.setValue('category', categoryId)
-                          setCategoryLoading(false)
+                          try {
+                            const { categoryId } =
+                              await extractCategoryFromTitle(
+                                field.value,
+                                group.id,
+                              )
+                            form.setValue('category', categoryId)
+                          } catch (error) {
+                            // Keep the current category on failure instead of
+                            // silently resetting / leaving the spinner stuck.
+                            console.error(
+                              'Category extraction failed',
+                              error,
+                            )
+                          } finally {
+                            setCategoryLoading(false)
+                          }
                         }
                       }}
                     />
