@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 
 type DrawerState =
   | { mode: 'closed' }
@@ -43,6 +43,12 @@ export function ExpenseDrawerProvider({ children }: { children: ReactNode }) {
   const closeDrawer = useCallback(() => {
     setState({ mode: 'closed' })
   }, [])
+
+  useEffect(() => {
+    const open = (event: Event) => openCreateExpense(new URLSearchParams((event as CustomEvent<string>).detail))
+    window.addEventListener('spliit-open-create', open)
+    return () => window.removeEventListener('spliit-open-create', open)
+  }, [openCreateExpense])
 
   return (
     <ExpenseDrawerContext.Provider

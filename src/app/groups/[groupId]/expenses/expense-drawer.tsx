@@ -144,8 +144,9 @@ function EditExpenseInDrawer({
       expense={expense}
       categories={categoriesWithExpenseCategory}
       onDuplicate={handleDuplicate}
-      onSubmit={async (expenseFormValues, participantId) => {
+      onSubmit={async (expenseFormValues, participantId, baseVersion) => {
         await updateExpenseMutateAsync({
+          baseVersion,
           expenseId,
           groupId,
           expenseFormValues,
@@ -154,8 +155,9 @@ function EditExpenseInDrawer({
         utils.groups.expenses.invalidate()
         closeDrawer()
       }}
-      onDelete={async (participantId) => {
+      onDelete={async (participantId, baseVersion) => {
         await deleteExpenseMutateAsync({
+          baseVersion,
           expenseId,
           groupId,
           participantId,

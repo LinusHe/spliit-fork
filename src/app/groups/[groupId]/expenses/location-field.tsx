@@ -19,7 +19,7 @@ export function LocationField({ value, onChange, isCreate }: LocationFieldProps)
   const autoDetectDone = useRef(false)
 
   const detectLocation = useCallback(async () => {
-    if (!navigator.geolocation) return
+    if (!navigator.geolocation || !navigator.onLine) return
 
     setIsLocating(true)
     try {

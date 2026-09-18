@@ -11,6 +11,7 @@ export const deleteGroupExpenseProcedure = baseProcedure
   .input(
     z.object({
       expenseId: z.string().min(1),
+      baseVersion: z.string().optional(),
       groupId: z.string().min(1),
       participantId: z.string().optional(),
     }),

@@ -64,7 +64,9 @@ import { CalendarIcon, ChevronRight, Copy, Save } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { useOfflineStatus } from '@/components/offline-status'
+import { fromCalendarDate, toCalendarDate } from '@/lib/date-only'
 import { useForm } from 'react-hook-form'
 import { match } from 'ts-pattern'
 import { DeletePopup } from '../../../../components/delete-popup'
@@ -171,8 +173,8 @@ export function ExpenseForm({
   group: NonNullable<AppRouterOutput['groups']['get']['group']>
   categories: AppRouterOutput['categories']['list']['categories']
   expense?: AppRouterOutput['groups']['expenses']['get']['expense']
-  onSubmit: (value: ExpenseFormValues, participantId?: string) => Promise<void>
-  onDelete?: (participantId?: string) => Promise<void>
+  onSubmit: (value: ExpenseFormValues, participantId?: string, baseVersion?: string) => Promise<void>
+  onDelete?: (participantId?: string, baseVersion?: string) => Promise<void>
   duplicateUrl?: string
   onDuplicate?: () => void
   onCancel?: () => void
@@ -180,6 +182,10 @@ export function ExpenseForm({
   runtimeFeatureFlags: RuntimeFeatureFlags
 }) {
   const t = useTranslations('ExpenseForm')
+  const offline = useOfflineStatus()
+  // Keep the version the form was OPENED with, not a background-refetched version.
+  const baseVersion = useRef(expense?.syncVersion)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const locale = useLocale() as Locale
   const isCreate = expense === undefined
   const urlSearchParams = useSearchParams()
@@ -232,7 +238,7 @@ export function ExpenseForm({
       : searchParams.get('reimbursement')
       ? {
           title: t('reimbursement'),
-          expenseDate: new Date(),
+          expenseDate: fromCalendarDate(new Date()),
           amount: amountAsDecimal(
             Number(searchParams.get('amount')) || 0,
             groupCurrency,
@@ -264,7 +270,7 @@ export function ExpenseForm({
           title: searchParams.get('title') ?? '',
           expenseDate: searchParams.get('date')
             ? new Date(searchParams.get('date') as string)
-            : new Date(),
+            : fromCalendarDate(new Date()),
           amount: Number(searchParams.get('amount')) || 0,
           originalCurrency: group.currencyCode ?? undefined,
           originalAmount: undefined,
@@ -316,7 +322,12 @@ export function ExpenseForm({
       delete values.originalAmount
       delete values.originalCurrency
     }
-    return onSubmit(values, activeUserId ?? undefined)
+    try {
+      setSaveError(null)
+      await onSubmit(values, activeUserId ?? undefined, baseVersion.current)
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Speichern fehlgeschlagen. Deine Eingabe bleibt erhalten.')
+    }
   }
 
   const [isIncome, setIsIncome] = useState(Number(form.getValues().amount) < 0)
@@ -469,13 +480,15 @@ export function ExpenseForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(submit)}>
+        {saveError && <p role="alert" className="mb-4 rounded-md border border-destructive p-3 text-sm text-destructive">{saveError}</p>}
+        {offline.offline && <p className="mb-4 text-xs text-muted-foreground">Wird auf diesem Gerät gespeichert und später synchronisiert. Beleg-Upload, KI und Ortssuche benötigen Internet.</p>}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>
                 {t(`${sExpense}.${isCreate ? 'create' : 'edit'}`)}
               </CardTitle>
-              {isCreate && runtimeFeatureFlags.enableReceiptExtract && (
+              {isCreate && !offline.offline && runtimeFeatureFlags.enableReceiptExtract && (
                 <CreateFromReceiptButton />
               )}
               {!isCreate && onDuplicate && (
@@ -513,7 +526,7 @@ export function ExpenseForm({
                       onBlur={async () => {
                         field.onBlur() // avoid skipping other blur event listeners since we overwrite `field`
                         if (
-                          runtimeFeatureFlags.enableCategoryExtract &&
+                          !offline.offline && runtimeFeatureFlags.enableCategoryExtract &&
                           field.value?.trim()
                         ) {
                           setCategoryLoading(true)
@@ -569,7 +582,7 @@ export function ExpenseForm({
                           >
                             <CalendarIcon className="mr-2 h-4 w-4 opacity-70" />
                             {value
-                              ? value.toLocaleDateString(locale, {
+                              ? toCalendarDate(value).toLocaleDateString(locale, {
                                   dateStyle: 'long',
                                 })
                               : t(`${sExpense}.DateField.label`)}
@@ -582,11 +595,11 @@ export function ExpenseForm({
                       >
                         <Calendar
                           mode="single"
-                          selected={value}
+                          selected={value ? toCalendarDate(value) : undefined}
                           onSelect={(date) =>
-                            field.onChange(date ?? new Date())
+                            field.onChange(fromCalendarDate(date ?? new Date()))
                           }
-                          defaultMonth={value}
+                          defaultMonth={value ? toCalendarDate(value) : undefined}
                           weekStartsOn={1}
                         />
                       </PopoverContent>
@@ -1345,7 +1358,7 @@ export function ExpenseForm({
           </CardContent>
         </Card>
 
-        {runtimeFeatureFlags.enableExpenseDocuments && (
+        {!offline.offline && runtimeFeatureFlags.enableExpenseDocuments && (
           <Card className="mt-4">
             <CardHeader>
               <CardTitle className="flex justify-between">
@@ -1377,7 +1390,7 @@ export function ExpenseForm({
           </SubmitButton>
           {!isCreate && onDelete && (
             <DeletePopup
-              onDelete={() => onDelete(activeUserId ?? undefined)}
+              onDelete={() => onDelete(activeUserId ?? undefined, baseVersion.current)}
             ></DeletePopup>
           )}
           {onCancel ? (
@@ -1394,4 +1407,3 @@ export function ExpenseForm({
     </Form>
   )
 }
-

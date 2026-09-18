@@ -3,6 +3,8 @@
 import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { readData } from '@/lib/offline/storage'
+import { useOfflineStatus } from '@/components/offline-status'
 
 interface VersionInfo {
   version: number
@@ -11,6 +13,7 @@ interface VersionInfo {
 }
 
 export function AppVersion() {
+  const offline = useOfflineStatus()
   const [version, setVersion] = useState<VersionInfo | null>(null)
   const [updating, setUpdating] = useState(false)
 
@@ -22,23 +25,15 @@ export function AppVersion() {
   }, [])
 
   const forceUpdate = useCallback(async () => {
+    if (!navigator.onLine || (await readData()).queue.length) return
     setUpdating(true)
     try {
-      // 1. Unregister all service workers
-      const registrations = await navigator.serviceWorker?.getRegistrations()
-      if (registrations) {
-        await Promise.all(registrations.map((r) => r.unregister()))
-      }
-
-      // 2. Clear all caches
-      const cacheNames = await caches?.keys()
-      if (cacheNames) {
-        await Promise.all(cacheNames.map((name) => caches.delete(name)))
-      }
-
-      // 3. Re-register fresh SW and reload
-      if ('serviceWorker' in navigator) {
-        await navigator.serviceWorker.register('/sw.js')
+      const registration = await navigator.serviceWorker?.getRegistration()
+      await registration?.update()
+      if (registration?.waiting) {
+        navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload(), { once: true })
+        registration.waiting.postMessage('SKIP_WAITING')
+        return
       }
       window.location.reload()
     } catch {
@@ -58,7 +53,7 @@ export function AppVersion() {
         variant="ghost"
         size="sm"
         onClick={forceUpdate}
-        disabled={updating}
+        disabled={updating || offline.offline || offline.pending > 0}
         className="h-6 px-2 text-xs"
       >
         <RefreshCw className={`w-3 h-3 mr-1 ${updating ? 'animate-spin' : ''}`} />

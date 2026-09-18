@@ -6,6 +6,8 @@ import { httpBatchLink } from '@trpc/client'
 import { createTRPCReact } from '@trpc/react-query'
 import { useState } from 'react'
 import superjson from 'superjson'
+import { offlineLink } from '@/lib/offline/link'
+import { OfflineStatus } from '@/components/offline-status'
 import { makeQueryClient } from './query-client'
 import type { AppRouter } from './routers/_app'
 
@@ -55,6 +57,7 @@ export function TRPCProvider(
   const [trpcClient] = useState(() =>
     trpc.createClient({
       links: [
+        offlineLink,
         httpBatchLink({
           transformer: superjson,
           url: getUrl(),
@@ -65,6 +68,7 @@ export function TRPCProvider(
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
+        <OfflineStatus />
         {props.children}
       </QueryClientProvider>
     </trpc.Provider>

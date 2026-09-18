@@ -69,6 +69,7 @@ model GroupCategory {
 
 model Expense {
   id               String            @id
+  syncVersion      String            @default(cuid())
   group            Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
   expenseDate      DateTime          @default(dbgenerated("CURRENT_DATE")) @db.Date
   title            String
@@ -161,4 +162,12 @@ enum ActivityType {
   CREATE_EXPENSE
   UPDATE_EXPENSE
   DELETE_EXPENSE
+}
+
+// Durable receipts make retries safe even after an expense has been deleted.
+model OfflineMutation {
+  id          String   @id
+  groupId     String
+  requestHash String
+  createdAt   DateTime @default(now())
 }

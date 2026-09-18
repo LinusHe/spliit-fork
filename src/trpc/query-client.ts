@@ -6,7 +6,10 @@ export function makeQueryClient() {
     defaultOptions: {
       queries: {
         staleTime: 30 * 1000,
+        networkMode: 'always',
+        retry: 1,
       },
+      mutations: { networkMode: 'always', retry: false },
       dehydrate: {
         serializeData: superjson.serialize,
         shouldDehydrateQuery: (query) =>

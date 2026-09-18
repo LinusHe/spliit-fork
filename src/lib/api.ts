@@ -11,6 +11,7 @@ import {
   Expense,
   RecurrenceRule,
   RecurringExpenseLink,
+  Prisma,
 } from '@prisma/client'
 import { nanoid } from 'nanoid'
 
@@ -55,8 +56,11 @@ export async function createExpense(
   expenseFormValues: ExpenseFormValues,
   groupId: string,
   participantId?: string,
+  db: Prisma.TransactionClient = prisma,
+  expenseId = randomId(),
+  syncVersion = randomId(),
 ): Promise<Expense> {
-  const group = await getGroup(groupId)
+  const group = await getGroup(groupId, db)
   if (!group) throw new Error(`Invalid group ID: ${groupId}`)
 
   for (const participant of [
@@ -67,12 +71,11 @@ export async function createExpense(
       throw new Error(`Invalid participant ID: ${participant}`)
   }
 
-  const expenseId = randomId()
   await logActivity(groupId, ActivityType.CREATE_EXPENSE, {
     participantId,
     expenseId,
     data: expenseFormValues.title,
-  })
+  }, db)
 
   const isCreateRecurrence =
     expenseFormValues.recurrenceRule !== RecurrenceRule.NONE
@@ -82,9 +85,10 @@ export async function createExpense(
     groupId,
   )
 
-  return prisma.expense.create({
+  return db.expense.create({
     data: {
       id: expenseId,
+      syncVersion,
       groupId,
       expenseDate: expenseFormValues.expenseDate,
       categoryId: expenseFormValues.category,
@@ -134,16 +138,17 @@ export async function deleteExpense(
   groupId: string,
   expenseId: string,
   participantId?: string,
+  db: Prisma.TransactionClient = prisma,
 ) {
-  const existingExpense = await getExpense(groupId, expenseId)
+  const existingExpense = await getExpense(groupId, expenseId, db)
   await logActivity(groupId, ActivityType.DELETE_EXPENSE, {
     participantId,
     expenseId,
     data: existingExpense?.title,
-  })
+  }, db)
 
-  await prisma.expense.delete({
-    where: { id: expenseId },
+  await db.expense.delete({
+    where: { id: expenseId, groupId },
     include: { paidFor: true, paidBy: true },
   })
 }
@@ -186,11 +191,13 @@ export async function updateExpense(
   expenseId: string,
   expenseFormValues: ExpenseFormValues,
   participantId?: string,
+  db: Prisma.TransactionClient = prisma,
+  syncVersion = randomId(),
 ) {
-  const group = await getGroup(groupId)
+  const group = await getGroup(groupId, db)
   if (!group) throw new Error(`Invalid group ID: ${groupId}`)
 
-  const existingExpense = await getExpense(groupId, expenseId)
+  const existingExpense = await getExpense(groupId, expenseId, db)
   if (!existingExpense) throw new Error(`Invalid expense ID: ${expenseId}`)
 
   for (const participant of [
@@ -205,7 +212,7 @@ export async function updateExpense(
     participantId,
     expenseId,
     data: expenseFormValues.title,
-  })
+  }, db)
 
   const isDeleteRecurrenceExpenseLink =
     existingExpense.recurrenceRule !== RecurrenceRule.NONE &&
@@ -234,9 +241,10 @@ export async function updateExpense(
     existingExpense.expenseDate,
   )
 
-  return prisma.expense.update({
-    where: { id: expenseId },
+  return db.expense.update({
+    where: { id: expenseId, groupId },
     data: {
+      syncVersion,
       expenseDate: expenseFormValues.expenseDate,
       amount: expenseFormValues.amount,
       originalAmount: expenseFormValues.originalAmount,
@@ -259,7 +267,7 @@ export async function updateExpense(
             participantId: paidFor.participant,
             shares: paidFor.shares,
           })),
-        update: expenseFormValues.paidFor.map((paidFor) => ({
+        update: expenseFormValues.paidFor.filter((p) => existingExpense.paidFor.some((old) => old.participantId === p.participant)).map((paidFor) => ({
           where: {
             expenseId_participantId: {
               expenseId,
@@ -371,8 +379,8 @@ export async function updateGroup(
   })
 }
 
-export async function getGroup(groupId: string) {
-  return prisma.group.findUnique({
+export async function getGroup(groupId: string, db: Prisma.TransactionClient = prisma) {
+  return db.group.findUnique({
     where: { id: groupId },
     include: { participants: true, categorySelections: true },
   })
@@ -517,9 +525,9 @@ export async function getGroupExpenseCount(groupId: string) {
   return prisma.expense.count({ where: { groupId } })
 }
 
-export async function getExpense(groupId: string, expenseId: string) {
-  return prisma.expense.findUnique({
-    where: { id: expenseId },
+export async function getExpense(groupId: string, expenseId: string, db: Prisma.TransactionClient = prisma) {
+  return db.expense.findUnique({
+    where: { id: expenseId, groupId },
     include: {
       paidBy: true,
       paidFor: true,
@@ -564,8 +572,9 @@ export async function logActivity(
   groupId: string,
   activityType: ActivityType,
   extra?: { participantId?: string; expenseId?: string; data?: string },
+  db: Prisma.TransactionClient = prisma,
 ) {
-  return prisma.activity.create({
+  return db.activity.create({
     data: {
       id: randomId(),
       groupId,

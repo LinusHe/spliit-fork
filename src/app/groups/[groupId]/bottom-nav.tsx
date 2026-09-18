@@ -11,10 +11,12 @@ import {
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useExpenseDrawerOptional } from './expenses/expense-drawer-context'
 
 export function BottomNav({ groupId }: { groupId: string }) {
   const t = useTranslations()
   const pathname = usePathname()
+  const drawer = useExpenseDrawerOptional()
 
   const currentTab =
     pathname.match(/\/groups\/[^/]+\/([^/]+)/)?.[1] || 'expenses'
@@ -65,6 +67,7 @@ export function BottomNav({ groupId }: { groupId: string }) {
                 : currentTab === item.key)
 
             if (item.isCenter) {
+              if (drawer) return <button key={item.key} type="button" aria-label="Ausgabe hinzufügen" onClick={() => drawer.openCreateExpense()} className="flex items-center justify-center -mt-5 rounded-full bg-primary text-primary-foreground w-12 h-12 shadow-lg hover:scale-105 active:scale-95 transition-transform"><item.icon className="w-6 h-6" strokeWidth={2.5} /></button>
               return (
                 <Link
                   key={item.key}

@@ -1,0 +1,588 @@
+import { expect, type APIRequestContext, type Page } from '@playwright/test'
+import { randomUUID } from 'node:crypto'
+import superjson from 'superjson'
+import { test } from './offline-network'
+
+async function api(
+  request: APIRequestContext,
+  path: string,
+  input: unknown,
+  write = false,
+) {
+  const response = write
+    ? await request.post(`http://127.0.0.1:3133/api/trpc/${path}`, {
+        data: superjson.serialize(input),
+      })
+    : await request.get(
+        `http://127.0.0.1:3133/api/trpc/${path}?input=${encodeURIComponent(
+          superjson.stringify(input),
+        )}`,
+      )
+  const json = await response.json()
+  expect(response.ok(), JSON.stringify(json)).toBeTruthy()
+  return superjson.deserialize<any>(json.result.data)
+}
+
+async function fixture(request: APIRequestContext) {
+  const { groupId } = await api(
+    request,
+    'groups.create',
+    {
+      groupFormValues: {
+        name: 'Offline Test',
+        currency: '€',
+        currencyCode: 'EUR',
+        participants: [{ name: 'Alice' }, { name: 'Bob' }],
+      },
+    },
+    true,
+  )
+  const { group } = await api(request, 'groups.get', { groupId })
+  const values = {
+    title: 'Original Dinner',
+    amount: 2400,
+    expenseDate: new Date('2026-09-17T00:00:00Z'),
+    category: 0,
+    paidBy: group.participants[0].id,
+    paidFor: group.participants.map((p: any) => ({
+      participant: p.id,
+      shares: 1,
+    })),
+    splitMode: 'EVENLY',
+    isReimbursement: false,
+    saveDefaultSplittingOptions: false,
+    documents: [],
+    recurrenceRule: 'NONE',
+    notes: '',
+  }
+  const { expenseId } = await api(
+    request,
+    'groups.expenses.create',
+    { groupId, expenseFormValues: values },
+    true,
+  )
+  const { expense } = await api(request, 'groups.expenses.get', {
+    groupId,
+    expenseId,
+  })
+  const mutation = {
+    id: randomUUID(),
+    kind: 'update',
+    groupId,
+    expenseId,
+    baseVersion: expense.syncVersion,
+    groupCurrency: JSON.stringify(['€', 'EUR']),
+    values: { ...values, title: 'Offline Dinner' },
+    localTime: Date.now(),
+  }
+  return { groupId, group, expenseId, values, expense, mutation }
+}
+
+async function openGroup(page: Page, f: Awaited<ReturnType<typeof fixture>>) {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      get: () => localStorage.getItem('__spliit-test-offline') !== 'true',
+    })
+  })
+  await page.addInitScript(
+    ({ groupId, participantId }) =>
+      localStorage.setItem(`${groupId}-activeUser`, participantId),
+    { groupId: f.groupId, participantId: f.group.participants[0].id },
+  )
+  await page.goto(`/groups/${f.groupId}/expenses`)
+  await expect(page.getByText('Original Dinner', { exact: true })).toBeVisible()
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready
+  })
+  // Explicit SW completion ensures this tests cold-start assets, not HTTP cache.
+  await page.evaluate(async (id) => {
+    const reg = await navigator.serviceWorker.ready
+    await new Promise<void>((resolve) => {
+      const channel = new MessageChannel()
+      channel.port1.onmessage = () => resolve()
+      reg.active!.postMessage(
+        {
+          type: 'WARM_URLS',
+          paths: [
+            '/groups',
+            `/groups/${id}/expenses`,
+            `/groups/${id}/balances`,
+            `/groups/${id}/stats`,
+          ],
+        },
+        [channel.port2],
+      )
+    })
+  }, f.groupId)
+}
+
+async function editTitle(page: Page, from: string, to: string) {
+  await page.getByText(from, { exact: true }).click()
+  await expect(page.locator('input[name="title"]')).toBeVisible()
+  await page.locator('input[name="title"]').fill(to)
+  await page.locator('button[type="submit"]').click()
+  await expect(page.locator('input[name="title"]')).not.toBeVisible()
+}
+
+test('server: conflict, exact-version override, replay, concurrent writes and group isolation', async ({
+  request,
+}) => {
+  const f = await fixture(request)
+  await api(
+    request,
+    'groups.expenses.update',
+    {
+      groupId: f.groupId,
+      expenseId: f.expenseId,
+      expenseFormValues: { ...f.values, title: 'Online Dinner' },
+    },
+    true,
+  )
+  const conflict = await api(request, 'offline.commit', f.mutation, true)
+  expect(conflict.status).toBe('conflict')
+  expect(conflict.current.title).toBe('Online Dinner')
+  const override = { ...f.mutation, baseVersion: conflict.current.syncVersion }
+  expect((await api(request, 'offline.commit', override, true)).status).toBe(
+    'applied',
+  )
+  expect((await api(request, 'offline.commit', override, true)).status).toBe(
+    'applied',
+  )
+  const snapshot = await api(request, 'offline.snapshot', {
+    groupId: f.groupId,
+  })
+  expect(snapshot.expenses).toHaveLength(1)
+  expect(
+    snapshot.activities.filter((a: any) => a.activityType === 'UPDATE_EXPENSE'),
+  ).toHaveLength(2)
+  const current = snapshot.expenses[0]
+  const attempts = await Promise.all(
+    ['A', 'B'].map((suffix) =>
+      api(
+        request,
+        'offline.commit',
+        {
+          ...f.mutation,
+          id: randomUUID(),
+          baseVersion: current.syncVersion,
+          values: { ...f.values, title: `Parallel ${suffix}` },
+        },
+        true,
+      ),
+    ),
+  )
+  expect(attempts.map((r) => r.status).sort()).toEqual(['applied', 'conflict'])
+  const other = await fixture(request)
+  const foreign = await request.get(
+    `/api/trpc/groups.expenses.get?input=${encodeURIComponent(
+      superjson.stringify({ groupId: other.groupId, expenseId: f.expenseId }),
+    )}`,
+  )
+  expect(foreign.status()).toBe(404)
+})
+
+test('server: create retry, update/delete chain and deleted-online restoration', async ({
+  request,
+}) => {
+  const f = await fixture(request)
+  const create = {
+    ...f.mutation,
+    id: randomUUID(),
+    expenseId: randomUUID(),
+    kind: 'create',
+    baseVersion: null,
+  }
+  const responses = await Promise.all([
+    api(request, 'offline.commit', create, true),
+    api(request, 'offline.commit', create, true),
+  ])
+  expect(responses.every((r) => r.status === 'applied')).toBe(true)
+  const del = {
+    ...create,
+    id: randomUUID(),
+    kind: 'delete',
+    baseVersion: create.id,
+    values: undefined,
+  }
+  expect((await api(request, 'offline.commit', del, true)).status).toBe(
+    'applied',
+  )
+  expect((await api(request, 'offline.commit', create, true)).status).toBe(
+    'applied',
+  )
+  expect(
+    (await api(request, 'offline.snapshot', { groupId: f.groupId })).expenses,
+  ).toHaveLength(1)
+  await api(
+    request,
+    'groups.expenses.delete',
+    { groupId: f.groupId, expenseId: f.expenseId },
+    true,
+  )
+  expect(await api(request, 'offline.commit', f.mutation, true)).toEqual({
+    status: 'conflict',
+    current: null,
+  })
+  expect(
+    (
+      await api(
+        request,
+        'offline.commit',
+        { ...f.mutation, baseVersion: null },
+        true,
+      )
+    ).status,
+  ).toBe('applied')
+  expect(
+    (await api(request, 'offline.snapshot', { groupId: f.groupId })).expenses[0]
+      .title,
+  ).toBe('Offline Dinner')
+})
+
+test('offline reload, local editing, balance navigation, reconnect conflict and accept local', async ({
+  page,
+  context,
+  network,
+  request,
+}) => {
+  const f = await fixture(request)
+  await openGroup(page, f)
+  await network.setOffline(context, true)
+  await page.reload()
+  await expect(page.getByTestId('offline-status')).toContainText('Offline')
+  await editTitle(page, 'Original Dinner', 'My offline change')
+  await expect(
+    page.getByText('My offline change', { exact: true }),
+  ).toBeVisible()
+  await page.reload()
+  await expect(
+    page.getByText('My offline change', { exact: true }),
+  ).toBeVisible()
+  await page.goto(`/groups/${f.groupId}/balances`)
+  await expect(page.getByTestId('offline-status')).toContainText('1 Änderung')
+  await page.goto(`/groups/${f.groupId}/expenses`)
+  await api(
+    request,
+    'groups.expenses.update',
+    {
+      groupId: f.groupId,
+      expenseId: f.expenseId,
+      expenseFormValues: { ...f.values, title: 'Newer online change' },
+    },
+    true,
+  )
+  await network.setOffline(context, false)
+  await expect(
+    page.getByRole('heading', {
+      name: 'Diese Ausgabe wurde auch online geändert',
+    }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('dialog').getByText(/Newer online change/),
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Meine Änderung übernehmen' }).click()
+  await expect(
+    page.getByRole('heading', {
+      name: 'Diese Ausgabe wurde auch online geändert',
+    }),
+  ).not.toBeVisible()
+  await expect
+    .poll(
+      async () =>
+        (
+          await api(request, 'groups.expenses.get', {
+            groupId: f.groupId,
+            expenseId: f.expenseId,
+          })
+        ).expense.title,
+    )
+    .toBe('My offline change')
+  await expect(page.getByTestId('offline-status')).toContainText(
+    'Alles synchronisiert',
+  )
+  const keys = await page.evaluate(async () =>
+    (
+      await Promise.all(
+        (await caches.keys()).map(async (name) =>
+          (await (await caches.open(name)).keys()).map((r) => r.url),
+        ),
+      )
+    ).flat(),
+  )
+  expect(keys.some((key) => key.includes('/_next/static/'))).toBe(true)
+  expect(keys.some((key) => key.includes('/api/'))).toBe(false)
+})
+
+test('conflict: keep online discards only that expense, defer survives reload', async ({
+  page,
+  context,
+  network,
+  request,
+}) => {
+  const f = await fixture(request)
+  await openGroup(page, f)
+  await network.setOffline(context, true)
+  await editTitle(page, 'Original Dinner', 'Local discarded')
+  await api(
+    request,
+    'groups.expenses.update',
+    {
+      groupId: f.groupId,
+      expenseId: f.expenseId,
+      expenseFormValues: { ...f.values, title: 'Keep online' },
+    },
+    true,
+  )
+  await network.setOffline(context, false)
+  await page.getByRole('button', { name: 'Später entscheiden' }).click()
+  await expect(page.getByTestId('offline-status')).toContainText('Entscheidung')
+  await page.reload()
+  await page.getByRole('button', { name: 'Online-Stand behalten' }).click()
+  await expect(page.getByText('Keep online', { exact: true })).toBeVisible()
+  expect(
+    (
+      await api(request, 'groups.expenses.get', {
+        groupId: f.groupId,
+        expenseId: f.expenseId,
+      })
+    ).expense.title,
+  ).toBe('Keep online')
+})
+
+test('offline creation and editing replay once after closing the page', async ({
+  page,
+  context,
+  network,
+  request,
+}) => {
+  const f = await fixture(request)
+  await openGroup(page, f)
+  await network.setOffline(context, true)
+  await page
+    .getByRole('button', { name: 'Ausgabe hinzufügen', exact: true })
+    .click()
+  await page.locator('input[name="title"]').fill('Offline Coffee')
+  await page.locator('input[name="amount"]').fill('7.50')
+  await page.locator('button[type="submit"]').click()
+  await expect(page.getByText('Offline Coffee', { exact: true })).toBeVisible()
+  await editTitle(page, 'Offline Coffee', 'Coffee renamed')
+  const replacement = await context.newPage()
+  await page.close()
+  await replacement.goto(`/groups/${f.groupId}/expenses`)
+  await expect(
+    replacement.getByText('Coffee renamed', { exact: true }),
+  ).toBeVisible()
+  await network.setOffline(context, false)
+  await expect
+    .poll(async () =>
+      (
+        await api(request, 'offline.snapshot', { groupId: f.groupId })
+      ).expenses.map((e: any) => e.title),
+    )
+    .toContain('Coffee renamed')
+  const snapshot = await api(request, 'offline.snapshot', {
+    groupId: f.groupId,
+  })
+  expect(snapshot.expenses).toHaveLength(2)
+  expect(
+    snapshot.expenses.find((e: any) => e.title === 'Coffee renamed').amount,
+  ).toBe(750)
+})
+
+test('lost acknowledgement retries the same creation without duplication', async ({
+  page,
+  context,
+  network,
+  request,
+}) => {
+  const f = await fixture(request)
+  await openGroup(page, f)
+  await network.setOffline(context, true)
+  await page
+    .getByRole('button', { name: 'Ausgabe hinzufügen', exact: true })
+    .click()
+  await page.locator('input[name="title"]').fill('Lost acknowledgement')
+  await page.locator('input[name="amount"]').fill('5')
+  await page.locator('button[type="submit"]').click()
+  await expect(
+    page.getByText('Lost acknowledgement', { exact: true }),
+  ).toBeVisible()
+  network.dropNextCommit()
+  await network.setOffline(context, false)
+  await expect
+    .poll(
+      async () =>
+        (await api(request, 'offline.snapshot', { groupId: f.groupId }))
+          .expenses.length,
+    )
+    .toBe(2)
+  expect(network.wasDropped()).toBe(true)
+  await page.reload()
+  await expect(page.getByTestId('offline-status')).toContainText(
+    'Alles synchronisiert',
+  )
+  expect(
+    (await api(request, 'offline.snapshot', { groupId: f.groupId })).expenses,
+  ).toHaveLength(2)
+})
+
+test('another online edit after conflict display requires a new decision', async ({
+  request,
+}) => {
+  const f = await fixture(request)
+  const update = async (title: string) =>
+    api(
+      request,
+      'groups.expenses.update',
+      {
+        groupId: f.groupId,
+        expenseId: f.expenseId,
+        expenseFormValues: { ...f.values, title },
+      },
+      true,
+    )
+  await update('Online v2')
+  const shown = await api(request, 'offline.commit', f.mutation, true)
+  await update('Online v3')
+  const retried = await api(
+    request,
+    'offline.commit',
+    { ...f.mutation, baseVersion: shown.current.syncVersion },
+    true,
+  )
+  expect(retried.status).toBe('conflict')
+  expect(retried.current.title).toBe('Online v3')
+})
+
+test('offline delete conflicts with online edit before explicit deletion', async ({
+  page,
+  context,
+  network,
+  request,
+}) => {
+  const f = await fixture(request)
+  await openGroup(page, f)
+  await network.setOffline(context, true)
+  await page.getByText('Original Dinner', { exact: true }).click()
+  await page.getByRole('button', { name: 'Löschen', exact: true }).click()
+  await page.getByRole('button', { name: 'Ja', exact: true }).click()
+  await expect(
+    page.getByText('Original Dinner', { exact: true }),
+  ).not.toBeVisible()
+  await api(
+    request,
+    'groups.expenses.update',
+    {
+      groupId: f.groupId,
+      expenseId: f.expenseId,
+      expenseFormValues: { ...f.values, title: 'Updated before deletion' },
+    },
+    true,
+  )
+  await network.setOffline(context, false)
+  await page.getByRole('button', { name: 'Trotzdem löschen' }).click()
+  await expect
+    .poll(
+      async () =>
+        (await api(request, 'offline.snapshot', { groupId: f.groupId }))
+          .expenses.length,
+    )
+    .toBe(0)
+})
+
+test('date regression: select tomorrow in Berlin, reopen and reload retain the chosen calendar day', async ({
+  page,
+  request,
+}) => {
+  const f = await fixture(request)
+  // Reproduce the old payload: Sep 18, 00:00 Berlin became Sep 17 in DATE.
+  await api(
+    request,
+    'groups.expenses.update',
+    {
+      groupId: f.groupId,
+      expenseId: f.expenseId,
+      expenseFormValues: {
+        ...f.values,
+        expenseDate: new Date('2026-09-18T00:00:00+02:00'),
+      },
+    },
+    true,
+  )
+  expect(
+    (
+      await api(request, 'groups.expenses.get', {
+        groupId: f.groupId,
+        expenseId: f.expenseId,
+      })
+    ).expense.expenseDate
+      .toISOString()
+      .slice(0, 10),
+  ).toBe('2026-09-17')
+  await openGroup(page, f)
+  await page.getByText('Original Dinner', { exact: true }).click()
+  await page.locator('button').filter({ hasText: '17. September 2026' }).click()
+  await page
+    .locator('button[data-day="2026-09-18"], td[data-day="2026-09-18"] button')
+    .click()
+  await page.keyboard.press('Escape')
+  await page.locator('button[type="submit"]').click()
+  await expect
+    .poll(async () =>
+      (
+        await api(request, 'groups.expenses.get', {
+          groupId: f.groupId,
+          expenseId: f.expenseId,
+        })
+      ).expense.expenseDate
+        .toISOString()
+        .slice(0, 10),
+    )
+    .toBe('2026-09-18')
+  await page.getByText('Original Dinner', { exact: true }).click()
+  await expect(
+    page.locator('button').filter({ hasText: '18. September 2026' }),
+  ).toBeVisible()
+  await page.reload()
+  await page.getByText('Original Dinner', { exact: true }).click()
+  await expect(
+    page.locator('button').filter({ hasText: '18. September 2026' }),
+  ).toBeVisible()
+})
+
+test('quota failure keeps form and reports that the save did not succeed', async ({
+  page,
+  context,
+  network,
+  request,
+}) => {
+  const f = await fixture(request)
+  await openGroup(page, f)
+  await network.setOffline(context, true)
+  await page.evaluate(() => {
+    const put = IDBObjectStore.prototype.put
+    IDBObjectStore.prototype.put = function (value, key) {
+      if (typeof value === 'string' && value.includes('quota-test-title'))
+        throw new DOMException('Test quota exhausted', 'QuotaExceededError')
+      return put.call(this, value, key)
+    }
+  })
+  await page.getByText('Original Dinner', { exact: true }).click()
+  await page.locator('input[name="title"]').fill('quota-test-title')
+  await page.locator('button[type="submit"]').click()
+  await expect(page.getByRole('alert')).toContainText(
+    'Lokales Speichern fehlgeschlagen',
+  )
+  await expect(page.locator('input[name="title"]')).toHaveValue(
+    'quota-test-title',
+  )
+  expect(
+    (
+      await api(request, 'groups.expenses.get', {
+        groupId: f.groupId,
+        expenseId: f.expenseId,
+      })
+    ).expense.title,
+  ).toBe('Original Dinner')
+})

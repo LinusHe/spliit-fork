@@ -3,6 +3,8 @@
 import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { readData } from '@/lib/offline/storage'
+import { useOfflineStatus } from '@/components/offline-status'
 
 interface VersionInfo {
   version: number
@@ -11,9 +13,17 @@ interface VersionInfo {
 }
 
 export function UpdateBanner() {
+  const offline = useOfflineStatus()
   const [updateAvailable, setUpdateAvailable] = useState(false)
   const [currentVersion, setCurrentVersion] = useState<VersionInfo | null>(null)
   const [newVersion, setNewVersion] = useState<VersionInfo | null>(null)
+
+  useEffect(() => {
+    const ready = () => setUpdateAvailable(true)
+    window.addEventListener('spliit-update-ready', ready)
+    void navigator.serviceWorker?.getRegistration().then((reg) => { if (reg?.waiting) ready() })
+    return () => window.removeEventListener('spliit-update-ready', ready)
+  }, [])
 
   // Fetch initial version on mount
   useEffect(() => {
@@ -43,9 +53,11 @@ export function UpdateBanner() {
   }, [currentVersion])
 
   const applyUpdate = useCallback(async () => {
+    if (!navigator.onLine || (await readData()).queue.length) return
     // Tell SW to skip waiting, then the controllerchange listener reloads
     const reg = await navigator.serviceWorker?.getRegistration()
     if (reg?.waiting) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload(), { once: true })
       reg.waiting.postMessage('SKIP_WAITING')
     } else {
       // No waiting worker, just hard reload
@@ -66,7 +78,7 @@ export function UpdateBanner() {
             </span>
           )}
         </div>
-        <Button size="sm" onClick={applyUpdate} className="shrink-0">
+        <Button size="sm" onClick={applyUpdate} disabled={offline.offline || offline.pending > 0} title={offline.pending ? 'Zuerst ausstehende Änderungen synchronisieren' : undefined} className="shrink-0">
           <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
           Aktualisieren
         </Button>

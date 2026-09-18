@@ -20,6 +20,7 @@ import { forwardRef, useEffect, useMemo, useState } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { useDebounce } from 'use-debounce'
 import { useCurrentGroup } from '../current-group-context'
+import { toCalendarDate } from '@/lib/date-only'
 
 const PAGE_SIZE = 20
 
@@ -58,7 +59,7 @@ function getExpenseGroup(date: Dayjs, today: Dayjs) {
 function getGroupedExpensesByDate(expenses: ExpensesType) {
   const today = dayjs()
   return expenses.reduce((result: { [key: string]: ExpensesType }, expense) => {
-    const expenseGroup = getExpenseGroup(dayjs(expense.expenseDate), today)
+    const expenseGroup = getExpenseGroup(dayjs(toCalendarDate(expense.expenseDate)), today)
     result[expenseGroup] = result[expenseGroup] ?? []
     result[expenseGroup].push(expense)
     return result
@@ -266,10 +267,10 @@ const ExpenseListForSearch = ({
               {t(`Groups.${expenseGroup}`)}
             </div>
             {groupExpenses.map((expense, idx) => {
-              const dateKey = dayjs(expense.expenseDate).format('YYYY-MM-DD')
+              const dateKey = dayjs(toCalendarDate(expense.expenseDate)).format('YYYY-MM-DD')
               const prevDateKey =
                 idx > 0
-                  ? dayjs(groupExpenses[idx - 1].expenseDate).format(
+                  ? dayjs(toCalendarDate(groupExpenses[idx - 1].expenseDate)).format(
                       'YYYY-MM-DD',
                     )
                   : null
