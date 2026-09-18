@@ -97,10 +97,9 @@ async function openGroup(page: Page, f: Awaited<ReturnType<typeof fixture>>) {
   // Only the application's automatic preparation may populate the cache.
   // The tests must not repair missing assets by sending WARM_URLS themselves.
   await page.goto(`/groups/${f.groupId}/edit`)
-  await expect(page.getByTestId('group-offline-ready')).toHaveText(
-    'Auf diesem Gerät offline bereit',
-    { timeout: 60000 },
-  )
+  await expect(
+    page.locator('[data-testid="group-offline-ready"]:visible'),
+  ).toHaveText('Auf diesem Gerät offline bereit', { timeout: 60000 })
   await page.goto(`/groups/${f.groupId}/expenses`)
   await expect(page.getByText('Original Dinner', { exact: true })).toBeVisible()
 }
@@ -112,6 +111,52 @@ async function editTitle(page: Page, from: string, to: string) {
   await page.locator('button[type="submit"]').click()
   await expect(page.locator('input[name="title"]')).not.toBeVisible()
 }
+
+test('closed IndexedDB connection is reopened before reading or writing', async ({
+  page,
+  request,
+  context,
+  network,
+}) => {
+  const f = await fixture(request)
+  await openGroup(page, f)
+  await network.setOffline(context, true)
+  for (const mode of ['readonly', 'readwrite']) {
+    await page.evaluate((mode) => {
+      const original = IDBDatabase.prototype.transaction
+      IDBDatabase.prototype.transaction = function (...args) {
+        if (this.name === 'spliit-offline-v1' && args[1] === mode) {
+          IDBDatabase.prototype.transaction = original
+          this.close() // Real close: subsequent transactions on this handle fail.
+        }
+        return original.apply(this, args)
+      }
+    }, mode)
+    await editTitle(
+      page,
+      mode === 'readonly' ? 'Original Dinner' : 'Reopened read',
+      mode === 'readonly' ? 'Reopened read' : 'Reopened write',
+    )
+  }
+  await page.reload()
+  await expect(page.getByText('Reopened write', { exact: true })).toBeVisible()
+  await expect(page.getByTestId('offline-status')).toContainText('2 Änderungen')
+  await network.setOffline(context, false)
+  await expect
+    .poll(
+      async () =>
+        (await api(request, 'offline.snapshot', { groupId: f.groupId }))
+          .expenses[0].title,
+    )
+    .toBe('Reopened write')
+  const snapshot = await api(request, 'offline.snapshot', {
+    groupId: f.groupId,
+  })
+  expect(snapshot.expenses).toHaveLength(1)
+  expect(
+    snapshot.activities.filter((a: any) => a.activityType === 'UPDATE_EXPENSE'),
+  ).toHaveLength(2)
+})
 
 test('PWA launch from root survives a disconnected cold start', async ({
   page,
@@ -133,9 +178,9 @@ test('PWA launch from root survives a disconnected cold start', async ({
   await expect(page.getByText('Original Dinner', { exact: true })).toBeVisible()
   await editTitle(page, 'Original Dinner', 'Flight mode edit')
   await page.goto(`/groups/${f.groupId}/edit`)
-  await expect(page.getByTestId('group-offline-ready')).toHaveText(
-    'Auf diesem Gerät offline bereit',
-  )
+  await expect(
+    page.locator('[data-testid="group-offline-ready"]:visible'),
+  ).toHaveText('Auf diesem Gerät offline bereit')
   await expect(page.getByTestId('group-offline-settings')).toContainText(
     '1 Ausgaben gespeichert',
   )
@@ -157,9 +202,9 @@ test('settings detect missing cached assets and repair them without test-side wa
   const f = await fixture(request)
   await openGroup(page, f)
   await page.goto(`/groups/${f.groupId}/edit`)
-  await expect(page.getByTestId('group-offline-ready')).toHaveText(
-    'Auf diesem Gerät offline bereit',
-  )
+  await expect(
+    page.locator('[data-testid="group-offline-ready"]:visible'),
+  ).toHaveText('Auf diesem Gerät offline bereit')
   await page.evaluate(async () => {
     for (const name of await caches.keys()) {
       if (!name.startsWith('spliit-offline-v1-')) continue
@@ -170,23 +215,22 @@ test('settings detect missing cached assets and repair them without test-side wa
   })
   await network.setOffline(context, true)
   await page.getByRole('button', { name: 'Offline-Stand prüfen' }).click()
-  await expect(page.getByTestId('group-offline-ready')).toHaveText(
-    'Noch nicht vollständig offline verfügbar',
-  )
+  await expect(
+    page.locator('[data-testid="group-offline-ready"]:visible'),
+  ).toHaveText('Noch nicht vollständig offline verfügbar')
   await expect(page.getByTestId('group-offline-settings')).toContainText(
     'Seiten/Dateien fehlen',
   )
   await network.setOffline(context, false)
   await page.getByRole('button', { name: 'Offline-Dateien laden' }).click()
-  await expect(page.getByTestId('group-offline-ready')).toHaveText(
-    'Auf diesem Gerät offline bereit',
-    { timeout: 60000 },
-  )
+  await expect(
+    page.locator('[data-testid="group-offline-ready"]:visible'),
+  ).toHaveText('Auf diesem Gerät offline bereit', { timeout: 60000 })
   await network.setOffline(context, true)
   await page.reload()
-  await expect(page.getByTestId('group-offline-ready')).toHaveText(
-    'Auf diesem Gerät offline bereit',
-  )
+  await expect(
+    page.locator('[data-testid="group-offline-ready"]:visible'),
+  ).toHaveText('Auf diesem Gerät offline bereit')
 })
 
 test('legacy installed worker is reported and explicit update enables offline launch', async ({
@@ -226,9 +270,9 @@ test('legacy installed worker is reported and explicit update enables offline la
     'Offline-Dienst antwortet nicht',
     { timeout: 20000 },
   )
-  await expect(page.getByTestId('group-offline-ready')).not.toHaveText(
-    'Auf diesem Gerät offline bereit',
-  )
+  await expect(
+    page.locator('[data-testid="group-offline-ready"]:visible'),
+  ).not.toHaveText('Auf diesem Gerät offline bereit')
   network.legacyWorker(false)
   await page.evaluate(async () => {
     await (await navigator.serviceWorker.getRegistration())?.update()
@@ -241,10 +285,9 @@ test('legacy installed worker is reported and explicit update enables offline la
     )
     .toBe(true)
   await page.getByRole('button', { name: 'App-Update installieren' }).click()
-  await expect(page.getByTestId('group-offline-ready')).toHaveText(
-    'Auf diesem Gerät offline bereit',
-    { timeout: 60000 },
-  )
+  await expect(
+    page.locator('[data-testid="group-offline-ready"]:visible'),
+  ).toHaveText('Auf diesem Gerät offline bereit', { timeout: 60000 })
   await network.setOffline(context, true)
   await page.goto('/groups')
   await expect(

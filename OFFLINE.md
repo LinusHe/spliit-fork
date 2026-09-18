@@ -57,6 +57,11 @@ Web Locks serialize synchronization across tabs. IndexedDB read/write transactio
 serialize journal edits; server receipts make duplicate attempts harmless on
 browsers without Web Locks. BroadcastChannel invalidates other tabs' query caches.
 Snapshots started before a local acknowledgement cannot replace the newer base.
+Closed IndexedDB handles are forgotten on close/version-change. If WebKit closes
+a connection before notifying the page, only transaction creation is retried once
+on a new connection, before any read/write request has run. Existing or aborted
+write transactions are not blindly replayed; storage/quota errors still preserve
+the form and never acknowledge a save that did not commit.
 
 ## Service worker and updates
 
