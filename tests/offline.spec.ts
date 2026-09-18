@@ -80,6 +80,8 @@ async function fixture(request: APIRequestContext) {
 
 async function openGroup(page: Page, f: Awaited<ReturnType<typeof fixture>>) {
   await page.addInitScript(() => {
+    // Keep the unrelated third-visit push opt-in dialog from covering controls.
+    localStorage.setItem('spliit-notification-prompt-dismissed', 'true')
     Object.defineProperty(navigator, 'onLine', {
       configurable: true,
       get: () => localStorage.getItem('__spliit-test-offline') !== 'true',
