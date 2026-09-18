@@ -106,7 +106,41 @@ async function openGroup(page: Page, f: Awaited<ReturnType<typeof fixture>>) {
 
 async function editTitle(page: Page, from: string, to: string) {
   await page.getByText(from, { exact: true }).click()
-  await expect(page.locator('input[name="title"]')).toBeVisible()
+  try {
+    await expect(page.locator('input[name="title"]')).toBeVisible()
+  } catch (error) {
+    // Retain query-state evidence if a browser loses its local-storage handle.
+    console.log(
+      'OFFLINE_QUERY_DIAGNOSTICS',
+      await page.evaluate(() => {
+        const element = document.querySelector('main') as any
+        const key = Object.keys(element).find((key) =>
+          key.startsWith('__reactFiber'),
+        )
+        let root = key && element[key]
+        while (root?.return) root = root.return
+        const queue = [root]
+        while (queue.length) {
+          const fiber = queue.pop()
+          if (!fiber) continue
+          const client = fiber.memoizedProps?.client
+          if (client?.getQueryCache)
+            return client
+              .getQueryCache()
+              .getAll()
+              .map((q: any) => ({
+                key: q.queryKey,
+                status: q.state.status,
+                fetchStatus: q.state.fetchStatus,
+                error: q.state.error?.message,
+              }))
+          queue.push(fiber.child, fiber.sibling)
+        }
+        return 'Query client unavailable'
+      }),
+    )
+    throw error
+  }
   await page.locator('input[name="title"]').fill(to)
   await page.locator('button[type="submit"]').click()
   await expect(page.locator('input[name="title"]')).not.toBeVisible()
@@ -181,12 +215,12 @@ test('PWA launch from root survives a disconnected cold start', async ({
   await expect(
     page.locator('[data-testid="group-offline-ready"]:visible'),
   ).toHaveText('Auf diesem Gerät offline bereit')
-  await expect(page.getByTestId('group-offline-settings')).toContainText(
-    '1 Ausgaben gespeichert',
-  )
-  await expect(page.getByTestId('group-offline-settings')).toContainText(
-    '1 lokale Änderungen warten auf Übertragung',
-  )
+  await expect(
+    page.locator('[data-testid="group-offline-settings"]:visible'),
+  ).toContainText('1 Ausgaben gespeichert')
+  await expect(
+    page.locator('[data-testid="group-offline-settings"]:visible'),
+  ).toContainText('1 lokale Änderungen warten auf Übertragung')
   await page.screenshot({
     path: test.info().outputPath('offline-settings.png'),
     fullPage: true,
@@ -218,9 +252,9 @@ test('settings detect missing cached assets and repair them without test-side wa
   await expect(
     page.locator('[data-testid="group-offline-ready"]:visible'),
   ).toHaveText('Noch nicht vollständig offline verfügbar')
-  await expect(page.getByTestId('group-offline-settings')).toContainText(
-    'Seiten/Dateien fehlen',
-  )
+  await expect(
+    page.locator('[data-testid="group-offline-settings"]:visible'),
+  ).toContainText('Seiten/Dateien fehlen')
   await network.setOffline(context, false)
   await page.getByRole('button', { name: 'Offline-Dateien laden' }).click()
   await expect(
@@ -266,10 +300,9 @@ test('legacy installed worker is reported and explicit update enables offline la
     }),
   )
   await page.goto(`/groups/${f.groupId}/edit`)
-  await expect(page.getByTestId('group-offline-settings')).toContainText(
-    'Offline-Dienst antwortet nicht',
-    { timeout: 20000 },
-  )
+  await expect(
+    page.locator('[data-testid="group-offline-settings"]:visible'),
+  ).toContainText('Offline-Dienst antwortet nicht', { timeout: 20000 })
   await expect(
     page.locator('[data-testid="group-offline-ready"]:visible'),
   ).not.toHaveText('Auf diesem Gerät offline bereit')
