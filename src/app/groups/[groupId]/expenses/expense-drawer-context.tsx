@@ -46,9 +46,14 @@ export function ExpenseDrawerProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const open = (event: Event) => openCreateExpense(new URLSearchParams((event as CustomEvent<string>).detail))
+    const edit = (event: Event) => openExpense((event as CustomEvent<string>).detail)
     window.addEventListener('spliit-open-create', open)
-    return () => window.removeEventListener('spliit-open-create', open)
-  }, [openCreateExpense])
+    window.addEventListener('spliit-open-edit', edit)
+    return () => {
+      window.removeEventListener('spliit-open-create', open)
+      window.removeEventListener('spliit-open-edit', edit)
+    }
+  }, [openCreateExpense, openExpense])
 
   return (
     <ExpenseDrawerContext.Provider

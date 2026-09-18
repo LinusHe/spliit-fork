@@ -18,11 +18,17 @@ import {
   subscribeSync,
   sync,
 } from '@/lib/offline/engine'
+import {
+  getReadiness,
+  getServerReadiness,
+  subscribeReadiness,
+} from '@/lib/offline/readiness'
 import { readData, subscribeData } from '@/lib/offline/storage'
 import type { Snapshot } from '@/lib/offline/types'
 import { formatCurrency, getCurrencyFromGroup } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, Check, CloudOff, Loader2 } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import superjson from 'superjson'
 
@@ -32,6 +38,13 @@ export function useOfflineStatus() {
 
 export function OfflineStatus() {
   const state = useOfflineStatus()
+  const pathname = usePathname()
+  const groupId = pathname.match(/^\/groups\/([^/]+)/)?.[1] ?? ''
+  const files = useSyncExternalStore(
+    subscribeReadiness,
+    () => getReadiness(groupId),
+    getServerReadiness,
+  )
   const client = useQueryClient()
   const [recent, setRecent] = useState(false)
   const [deferred, setDeferred] = useState<string | null>(null)
@@ -82,6 +95,15 @@ export function OfflineStatus() {
         event.stopPropagation()
         window.dispatchEvent(
           new CustomEvent('spliit-open-create', { detail: link.search }),
+        )
+        return
+      }
+      const edit = link.pathname.match(/\/expenses\/([^/]+)\/edit$/)
+      if (edit) {
+        event.preventDefault()
+        event.stopPropagation()
+        window.dispatchEvent(
+          new CustomEvent('spliit-open-edit', { detail: edit[1] }),
         )
         return
       }
@@ -235,7 +257,12 @@ export function OfflineStatus() {
     : null
 
   const shownLabel =
-    label ?? (state.preparing ? 'Offline-Ansicht wird vorbereitet …' : null)
+    label ??
+    (files.preparing
+      ? 'Offline-Ansicht wird vorbereitet …'
+      : files.error
+      ? 'Offline noch nicht bereit · bitte Gruppeneinstellungen prüfen'
+      : null)
   return (
     <>
       {shownLabel && (

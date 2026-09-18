@@ -2,7 +2,13 @@
 
 ## User experience
 
-Open a group online and wait for “Offline-Ansicht wird vorbereitet …” to disappear.
+Open a group online, open its settings, and wait for **“Auf diesem Gerät offline
+bereit”** under **Offline-Verfügbarkeit**. A disappearing preparation pill alone
+is not a readiness guarantee. The settings card remains accessible offline and
+with pending mutations; it shows the local snapshot time/expense count, pending
+mutations for this group, checked pages/assets, missing files, and active worker
+version. “Offline-Stand prüfen” rechecks the actual cache even without a network;
+“Offline-Dateien laden” refreshes the snapshot and retries downloads online.
 Its complete expense data, participants and categories are stored in IndexedDB;
 the service worker saves the main group pages and their application bundles.
 The same expense drawer works offline: create, edit, delete and reimbursements.
@@ -63,6 +69,21 @@ New workers wait for an explicit update, without forcibly reloading open forms.
 Update controls refuse while offline or while the durable queue is nonempty.
 IndexedDB is independent of deployment-versioned asset caches and never cleared
 by the update flow. Existing Push notification handlers are retained.
+
+Readiness protocol v2 talks to the **controlling** worker, not an arbitrary active
+or waiting registration. Older nonresponding workers are reported as an update
+requirement, never as ready. Each cache check parses the saved HTML and verifies
+that its referenced same-origin bundles/styles/preloaded fonts/images still
+exist. Non-HTML responses, failed downloads and timeouts cannot report success.
+Preparation includes `/`, `/groups`, the group alias and all six group sections;
+redirected documents are saved as plain HTML responses for WebKit compatibility.
+Card-body navigation and tab changes use full cached documents offline rather
+than uncached Next RSC requests. Activity expense links open the local drawer.
+
+Tests must rely on application-owned preparation, not send WARM_URLS directly.
+Regression scenarios include root/PWA launch, card-body navigation, settings with
+queued offline edits, evicted assets with repair, and a legacy installed worker
+followed by an explicit update. These supplement mutation/conflict/date tests.
 
 ## Date-only bug
 

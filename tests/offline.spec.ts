@@ -92,29 +92,15 @@ async function openGroup(page: Page, f: Awaited<ReturnType<typeof fixture>>) {
   )
   await page.goto(`/groups/${f.groupId}/expenses`)
   await expect(page.getByText('Original Dinner', { exact: true })).toBeVisible()
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.ready
-  })
-  // Explicit SW completion ensures this tests cold-start assets, not HTTP cache.
-  await page.evaluate(async (id) => {
-    const reg = await navigator.serviceWorker.ready
-    await new Promise<void>((resolve) => {
-      const channel = new MessageChannel()
-      channel.port1.onmessage = () => resolve()
-      reg.active!.postMessage(
-        {
-          type: 'WARM_URLS',
-          paths: [
-            '/groups',
-            `/groups/${id}/expenses`,
-            `/groups/${id}/balances`,
-            `/groups/${id}/stats`,
-          ],
-        },
-        [channel.port2],
-      )
-    })
-  }, f.groupId)
+  // Only the application's automatic preparation may populate the cache.
+  // The tests must not repair missing assets by sending WARM_URLS themselves.
+  await page.goto(`/groups/${f.groupId}/edit`)
+  await expect(page.getByTestId('group-offline-ready')).toHaveText(
+    'Auf diesem Gerät offline bereit',
+    { timeout: 60000 },
+  )
+  await page.goto(`/groups/${f.groupId}/expenses`)
+  await expect(page.getByText('Original Dinner', { exact: true })).toBeVisible()
 }
 
 async function editTitle(page: Page, from: string, to: string) {
@@ -124,6 +110,145 @@ async function editTitle(page: Page, from: string, to: string) {
   await page.locator('button[type="submit"]').click()
   await expect(page.locator('input[name="title"]')).not.toBeVisible()
 }
+
+test('PWA launch from root survives a disconnected cold start', async ({
+  page,
+  request,
+  context,
+  network,
+}) => {
+  const f = await fixture(request)
+  await openGroup(page, f)
+  await network.setOffline(context, true)
+  await page.goto('/')
+  await expect(
+    page.getByText('Offline Test', { exact: true }).first(),
+  ).toBeVisible()
+  // Click the card body, not its anchor: this used to request uncached RSC.
+  await page
+    .getByTestId('recent-group-card')
+    .click({ position: { x: 12, y: 55 } })
+  await expect(page.getByText('Original Dinner', { exact: true })).toBeVisible()
+  await editTitle(page, 'Original Dinner', 'Flight mode edit')
+  await page.goto(`/groups/${f.groupId}/edit`)
+  await expect(page.getByTestId('group-offline-ready')).toHaveText(
+    'Auf diesem Gerät offline bereit',
+  )
+  await expect(page.getByTestId('group-offline-settings')).toContainText(
+    '1 Ausgaben gespeichert',
+  )
+  await expect(page.getByTestId('group-offline-settings')).toContainText(
+    '1 lokale Änderungen warten auf Übertragung',
+  )
+  await page.screenshot({
+    path: test.info().outputPath('offline-settings.png'),
+    fullPage: true,
+  })
+})
+
+test('settings detect missing cached assets and repair them without test-side warming', async ({
+  page,
+  request,
+  context,
+  network,
+}) => {
+  const f = await fixture(request)
+  await openGroup(page, f)
+  await page.goto(`/groups/${f.groupId}/edit`)
+  await expect(page.getByTestId('group-offline-ready')).toHaveText(
+    'Auf diesem Gerät offline bereit',
+  )
+  await page.evaluate(async () => {
+    for (const name of await caches.keys()) {
+      if (!name.startsWith('spliit-offline-v1-')) continue
+      const cache = await caches.open(name)
+      for (const key of await cache.keys())
+        if (key.url.endsWith('.js')) await cache.delete(key)
+    }
+  })
+  await network.setOffline(context, true)
+  await page.getByRole('button', { name: 'Offline-Stand prüfen' }).click()
+  await expect(page.getByTestId('group-offline-ready')).toHaveText(
+    'Noch nicht vollständig offline verfügbar',
+  )
+  await expect(page.getByTestId('group-offline-settings')).toContainText(
+    'Seiten/Dateien fehlen',
+  )
+  await network.setOffline(context, false)
+  await page.getByRole('button', { name: 'Offline-Dateien laden' }).click()
+  await expect(page.getByTestId('group-offline-ready')).toHaveText(
+    'Auf diesem Gerät offline bereit',
+    { timeout: 60000 },
+  )
+  await network.setOffline(context, true)
+  await page.reload()
+  await expect(page.getByTestId('group-offline-ready')).toHaveText(
+    'Auf diesem Gerät offline bereit',
+  )
+})
+
+test('legacy installed worker is reported and explicit update enables offline launch', async ({
+  page,
+  request,
+  context,
+  network,
+}) => {
+  const f = await fixture(request)
+  network.legacyWorker(true)
+  page.on('console', (message) => {
+    if (message.text().startsWith('INDEXEDDB_OPEN_ERROR'))
+      console.log(message.text())
+  })
+  await page.addInitScript(() => {
+    const open = indexedDB.open.bind(indexedDB)
+    indexedDB.open = (name, version) => {
+      const request = open(name, version)
+      request.addEventListener('error', () =>
+        console.log(
+          'INDEXEDDB_OPEN_ERROR',
+          request.error?.name,
+          request.error?.message,
+        ),
+      )
+      return request
+    }
+  })
+  await page.addInitScript(() =>
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      get: () => localStorage.getItem('__spliit-test-offline') !== 'true',
+    }),
+  )
+  await page.goto(`/groups/${f.groupId}/edit`)
+  await expect(page.getByTestId('group-offline-settings')).toContainText(
+    'Offline-Dienst antwortet nicht',
+    { timeout: 20000 },
+  )
+  await expect(page.getByTestId('group-offline-ready')).not.toHaveText(
+    'Auf diesem Gerät offline bereit',
+  )
+  network.legacyWorker(false)
+  await page.evaluate(async () => {
+    await (await navigator.serviceWorker.getRegistration())?.update()
+  })
+  await expect
+    .poll(() =>
+      page.evaluate(async () =>
+        Boolean((await navigator.serviceWorker.getRegistration())?.waiting),
+      ),
+    )
+    .toBe(true)
+  await page.getByRole('button', { name: 'App-Update installieren' }).click()
+  await expect(page.getByTestId('group-offline-ready')).toHaveText(
+    'Auf diesem Gerät offline bereit',
+    { timeout: 60000 },
+  )
+  await network.setOffline(context, true)
+  await page.goto('/groups')
+  await expect(
+    page.getByText('Offline Test', { exact: true }).first(),
+  ).toBeVisible()
+})
 
 test('server: conflict, exact-version override, replay, concurrent writes and group isolation', async ({
   request,

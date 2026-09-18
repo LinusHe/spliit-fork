@@ -3,11 +3,12 @@
 import GroupInformation from '@/app/groups/[groupId]/information/group-information'
 import { GlobalSettings } from '@/components/global-settings'
 import { GroupForm } from '@/components/group-form'
+import { GroupOfflineSettings } from '@/components/group-offline-settings'
 import { NotificationSettings } from '@/components/notification-settings'
-import { trpc } from '@/trpc/client'
-import { useCurrentGroup } from '../current-group-context'
 import { useOfflineStatus } from '@/components/offline-status'
 import { refreshSnapshot } from '@/lib/offline/engine'
+import { trpc } from '@/trpc/client'
+import { useCurrentGroup } from '../current-group-context'
 
 export const EditGroup = () => {
   const offline = useOfflineStatus()
@@ -16,11 +17,20 @@ export const EditGroup = () => {
   const { mutateAsync } = trpc.groups.update.useMutation()
   const utils = trpc.useUtils()
 
-  if (isLoading) return <></>
-  if (offline.offline || offline.pending) return <p className="text-sm text-muted-foreground">Gruppeneinstellungen sind nach dem Online-Abgleich wieder verfügbar. Ausgaben kannst du weiterhin offline bearbeiten.</p>
+  if (isLoading || offline.offline || offline.pending)
+    return (
+      <>
+        <GroupOfflineSettings groupId={groupId} />
+        <p className="text-sm text-muted-foreground">
+          Gruppeneinstellungen sind nach dem Online-Abgleich wieder verfügbar.
+          Ausgaben kannst du weiterhin offline bearbeiten.
+        </p>
+      </>
+    )
 
   return (
     <>
+      <GroupOfflineSettings groupId={groupId} />
       <GroupForm
         group={data?.group}
         onSubmit={async (groupFormValues, participantId) => {

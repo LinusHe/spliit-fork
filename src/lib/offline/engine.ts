@@ -11,6 +11,7 @@ import superjson from 'superjson'
 import { v4 as uuid } from 'uuid'
 import { listExpenses, localQuery, project } from './projection'
 import { changeData, readData } from './storage'
+import { warmPages } from './readiness'
 import {
   currencyIdentity,
   mutationSchema,
@@ -75,54 +76,6 @@ export function reportStorageError(error: unknown) {
   })
 }
 const preparing = new Map<string, Promise<Snapshot>>()
-const warmed = new Set<string>()
-
-async function warmPages(groupId: string) {
-  if (
-    !navigator.onLine ||
-    !('serviceWorker' in navigator) ||
-    warmed.has(groupId)
-  )
-    return
-  warmed.add(groupId)
-  status({ preparing: true })
-  try {
-    const reg = await navigator.serviceWorker.ready
-    const paths = [
-      '/groups',
-      `/groups/${groupId}`,
-      ...[
-        'expenses',
-        'balances',
-        'stats',
-        'activity',
-        'edit',
-        'information',
-      ].map((path) => `/groups/${groupId}/${path}`),
-    ]
-    await new Promise<void>((resolve) => {
-      const channel = new MessageChannel()
-      const finish = () => {
-        clearTimeout(timer)
-        channel.port1.close()
-        resolve()
-      }
-      const timer = setTimeout(() => {
-        warmed.delete(groupId)
-        finish()
-      }, 30000)
-      channel.port1.onmessage = (event) => {
-        if (event.data.failed?.length) warmed.delete(groupId)
-        finish()
-      }
-      reg.active?.postMessage({ type: 'WARM_URLS', paths }, [channel.port2])
-    })
-  } catch {
-    warmed.delete(groupId)
-  } finally {
-    status({ preparing: false })
-  }
-}
 
 export async function refreshSnapshot(groupId: string) {
   const existing = preparing.get(groupId)

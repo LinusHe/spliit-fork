@@ -7,6 +7,7 @@ import { ChevronRight } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useExpenseDrawerOptional } from '../expenses/expense-drawer-context'
 
 export type Activity =
   AppRouterOutput['groups']['activities']['list']['activities'][number]
@@ -49,6 +50,7 @@ export function ActivityItem({
   dateStyle,
 }: Props) {
   const router = useRouter()
+  const drawer = useExpenseDrawerOptional()
   const locale = useLocale()
 
   const expenseExists = activity.expense !== undefined
@@ -62,7 +64,8 @@ export function ActivityItem({
       )}
       onClick={() => {
         if (expenseExists) {
-          router.push(`/groups/${groupId}/expenses/${activity.expenseId}/edit`)
+          if (drawer && activity.expenseId) drawer.openExpense(activity.expenseId)
+          else router.push(`/groups/${groupId}/expenses/${activity.expenseId}/edit`)
         }
       }}
     >

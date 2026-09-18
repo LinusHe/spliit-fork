@@ -32,6 +32,7 @@ import {
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { getSyncState } from '@/lib/offline/engine'
 
 export function RecentGroupListCard({
   group,
@@ -67,8 +68,13 @@ export function RecentGroupListCard({
         asChild
       >
         <div
+          data-testid="recent-group-card"
           className="text-base"
-          onClick={() => router.push(`/groups/${group.id}`)}
+          onClick={() => {
+            const href = `/groups/${group.id}`
+            if (!navigator.onLine || getSyncState().offline) location.assign(href)
+            else router.push(href)
+          }}
         >
           <div className="w-full flex flex-col gap-1">
             <div className="text-base flex gap-2 justify-between">

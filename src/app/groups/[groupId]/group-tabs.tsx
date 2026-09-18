@@ -2,6 +2,7 @@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTranslations } from 'next-intl'
 import { usePathname, useRouter } from 'next/navigation'
+import { getSyncState } from '@/lib/offline/engine'
 
 type Props = {
   groupId: string
@@ -19,7 +20,9 @@ export function GroupTabs({ groupId }: Props) {
       value={value}
       className="[&>*]:border overflow-x-auto"
       onValueChange={(value) => {
-        router.push(`/groups/${groupId}/${value}`)
+        const href = `/groups/${groupId}/${value}`
+        if (!navigator.onLine || getSyncState().offline) location.assign(href)
+        else router.push(href)
       }}
     >
       <TabsList>

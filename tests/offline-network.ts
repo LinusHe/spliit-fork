@@ -9,6 +9,7 @@ type TestNetwork = {
   setOffline: (context: BrowserContext, offline: boolean) => Promise<void>
   dropNextCommit: () => void
   wasDropped: () => boolean
+  legacyWorker: (enabled: boolean) => void
 }
 
 export const test = base.extend<{ network: TestNetwork }>({
@@ -16,9 +17,20 @@ export const test = base.extend<{ network: TestNetwork }>({
     let offline = false
     let dropNext = false
     let dropped = false
+    let legacy = false
     const server = createServer((req, res) => {
       if (offline) {
         req.socket.destroy()
+        return
+      }
+      if (legacy && req.url === '/sw.js') {
+        res.writeHead(200, {
+          'content-type': 'application/javascript',
+          'cache-control': 'no-store',
+        })
+        res.end(
+          "self.addEventListener('install', () => self.skipWaiting()); self.addEventListener('activate', event => event.waitUntil(self.clients.claim())); self.addEventListener('message', event => { if (event.data === 'SKIP_WAITING') self.skipWaiting() });",
+        )
         return
       }
       const upstream = forward(
@@ -54,6 +66,9 @@ export const test = base.extend<{ network: TestNetwork }>({
         dropNext = true
       },
       wasDropped: () => dropped,
+      legacyWorker: (enabled) => {
+        legacy = enabled
+      },
     })
     server.closeAllConnections()
     await new Promise<void>((resolve) => server.close(() => resolve()))
