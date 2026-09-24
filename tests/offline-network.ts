@@ -10,6 +10,8 @@ type TestNetwork = {
   dropNextCommit: () => void
   wasDropped: () => boolean
   legacyWorker: (enabled: boolean) => void
+  // Serve a byte-different sw.js, i.e. what a new deployment looks like.
+  bumpWorker: () => void
 }
 
 export const test = base.extend<{ network: TestNetwork }>({
@@ -18,6 +20,7 @@ export const test = base.extend<{ network: TestNetwork }>({
     let dropNext = false
     let dropped = false
     let legacy = false
+    let bump = 0
     const server = createServer((req, res) => {
       if (offline) {
         req.socket.destroy()
@@ -33,10 +36,32 @@ export const test = base.extend<{ network: TestNetwork }>({
         )
         return
       }
+      const headers = { ...req.headers }
+      // The bumped worker is rewritten below: fetch it uncompressed and in full.
+      if (bump && req.url?.startsWith('/sw.js'))
+        for (const name of [
+          'accept-encoding',
+          'if-none-match',
+          'if-modified-since',
+        ])
+          delete headers[name]
       const upstream = forward(
         `http://127.0.0.1:3133${req.url}`,
-        { method: req.method, headers: req.headers },
+        { method: req.method, headers },
         (reply) => {
+          if (bump && req.url?.startsWith('/sw.js')) {
+            const chunks: Buffer[] = []
+            reply.on('data', (chunk) => chunks.push(chunk))
+            reply.on('end', () => {
+              const body = `${Buffer.concat(chunks)}\n// deployment ${bump}\n`
+              const headers = { ...reply.headers }
+              delete headers['content-length']
+              delete headers['etag']
+              res.writeHead(reply.statusCode ?? 502, headers)
+              res.end(body)
+            })
+            return
+          }
           if (dropNext && req.url?.includes('/api/trpc/offline.commit')) {
             dropNext = false
             dropped = true
@@ -68,6 +93,9 @@ export const test = base.extend<{ network: TestNetwork }>({
       wasDropped: () => dropped,
       legacyWorker: (enabled) => {
         legacy = enabled
+      },
+      bumpWorker: () => {
+        bump++
       },
     })
     server.closeAllConnections()

@@ -18,7 +18,7 @@ const EMPTY: OfflineReadiness = {
 }
 let states: Record<string, OfflineReadiness> = {}
 const listeners = new Set<() => void>()
-const jobs = new Map<string, Promise<void>>()
+const jobs = new Map<string, { job: Promise<void>; prepare: boolean }>()
 const warmed = new Set<string>()
 export const getReadiness = (id: string) => states[id] ?? EMPTY
 export const getServerReadiness = () => EMPTY
@@ -114,28 +114,31 @@ async function request(
   })
 }
 
-export async function checkOfflineReadiness(id: string, prepare = false) {
+export async function checkOfflineReadiness(
+  id: string,
+  prepare = false,
+  // Re-download even when the cache is complete (explicit user action).
+  force = false,
+) {
   const running = jobs.get(id)
   if (running) {
-    if (prepare && !getReadiness(id).preparing) {
-      await running
-      return checkOfflineReadiness(id, true)
+    if (prepare && !running.prepare) {
+      await running.job
+      return checkOfflineReadiness(id, true, force)
     }
-    return running
+    return running.job
   }
   const job = (async () => {
-    update(id, {
-      checking: true,
-      preparing: prepare,
-      ready: false,
-      error: undefined,
-    })
+    update(id, { checking: true, preparing: false, error: undefined })
     try {
       const worker = await controller()
       // Probe the actual controlling worker before preparing. An old worker
       // must never be mistaken for the newly installed, waiting worker.
       let result = await request(worker, id, false)
-      if (prepare && navigator.onLine) result = await request(worker, id, true)
+      if (prepare && (force || !result.ready) && navigator.onLine) {
+        update(id, { preparing: true })
+        result = await request(worker, id, true)
+      }
       if (navigator.serviceWorker.controller !== worker)
         throw new Error(
           'App-Version wurde gewechselt. Bitte Offline-Dateien erneut prüfen.',
@@ -156,7 +159,7 @@ export async function checkOfflineReadiness(id: string, prepare = false) {
       })
     }
   })().finally(() => jobs.delete(id))
-  jobs.set(id, job)
+  jobs.set(id, { job, prepare })
   return job
 }
 

@@ -1,7 +1,7 @@
 import type { AppRouter } from '@/trpc/routers/_app'
 import { TRPCClientError, type TRPCLink } from '@trpc/client'
 import { observable } from '@trpc/server/observable'
-import { enqueue, getSyncState, offlineQuery } from './engine'
+import { enqueue, isOffline, offlineQuery } from './engine'
 
 export const offlineLink: TRPCLink<AppRouter> =
   () =>
@@ -38,7 +38,7 @@ export const offlineLink: TRPCLink<AppRouter> =
               return
             }
           }
-          if (!navigator.onLine || getSyncState().offline)
+          if (isOffline())
             throw new Error(
               'Diese Funktion benötigt eine Internetverbindung. Deine lokalen Ausgaben bleiben gespeichert.',
             )

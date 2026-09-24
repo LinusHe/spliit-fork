@@ -10,11 +10,12 @@ import { TRPCClientError, createTRPCClient, httpLink } from '@trpc/client'
 import superjson from 'superjson'
 import { v4 as uuid } from 'uuid'
 import { listExpenses, localQuery, project } from './projection'
-import { changeData, readData } from './storage'
 import { warmPages } from './readiness'
+import { changeData, readData } from './storage'
 import {
   currencyIdentity,
   mutationSchema,
+  type OfflineData,
   type PendingMutation,
   type Snapshot,
   type StoredExpense,
@@ -63,9 +64,32 @@ function status(patch: Partial<SyncState>) {
   state = { ...state, ...patch }
   listeners.forEach((fn) => fn())
 }
+// Bumped on every browser online/offline event. A request that was started
+// before the latest event must not override what that event reported.
+let epoch = 0
 export function setConnectivity(online: boolean) {
+  epoch++
   status({ offline: !online })
   if (online) void sync()
+}
+// navigator.onLine only knows whether an interface is up. iOS PWAs in
+// particular keep reporting "online" with no usable connection (weak cellular,
+// captive WiFi), so a failed request is the real signal.
+export const isOffline = () => !navigator.onLine || state.offline
+function markOffline(since: number) {
+  if (since === epoch && !state.offline) status({ offline: true })
+}
+// A cheap request that the service worker never answers from its cache.
+async function probe() {
+  try {
+    const response = await fetch(`/version.json?probe=${Date.now()}`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(4000),
+    })
+    return response.ok
+  } catch {
+    return false
+  }
 }
 export function reportStorageError(error: unknown) {
   status({
@@ -82,7 +106,14 @@ export async function refreshSnapshot(groupId: string) {
   if (existing) return existing
   const task = (async () => {
     const startedAt = Date.now()
-    const snapshot = await remote.offline.snapshot.query({ groupId })
+    const since = epoch
+    const snapshot = await remote.offline.snapshot
+      .query({ groupId })
+      .catch((error) => {
+        if (!(error instanceof TRPCClientError && error.data?.code))
+          markOffline(since)
+        throw error
+      })
     snapshot.savedAt = startedAt
     await changeData((data) => {
       if (
@@ -99,33 +130,70 @@ export async function refreshSnapshot(groupId: string) {
   return task
 }
 
+function groupSummary(saved: Snapshot, queue: PendingMutation[]) {
+  const snapshot = project(saved, queue)
+  return {
+    ...snapshot.group,
+    createdAt: snapshot.group.createdAt.toISOString(),
+    _count: { participants: snapshot.group.participants.length },
+    balances: getPublicBalances(
+      getSuggestedReimbursements(getBalances(listExpenses(snapshot))),
+    ),
+  }
+}
+
+// The group list is the PWA start page: answer from the device immediately and
+// refresh in the background. This also keeps every recent group offline-ready
+// without the user having to open each one.
+async function listGroups(groupIds: string[], data: OfflineData) {
+  const local = groupIds.flatMap((id) =>
+    data.snapshots[id] ? [groupSummary(data.snapshots[id], data.queue)] : [],
+  )
+  if (isOffline()) return { groups: local }
+  void refreshGroups(groupIds.filter((id) => data.snapshots[id]))
+  const missing = groupIds.filter((id) => !data.snapshots[id])
+  if (!missing.length) return { groups: local }
+  const since = epoch
+  const fetching = remote.groups.list
+    .query({ groupIds: missing })
+    .then(({ groups }) => {
+      // Stored groups replace these server summaries via the data listener.
+      for (const group of groups) void refreshSnapshot(group.id).catch(() => {})
+      return [...local, ...groups]
+    })
+    .catch((error) => {
+      if (!(error instanceof TRPCClientError && error.data?.code))
+        markOffline(since)
+      return local
+    })
+  // Never keep the start page waiting on a weak connection once some groups
+  // are on the device; the rest appear as soon as they are stored.
+  return { groups: local.length ? local : await fetching }
+}
+
+let refreshing: Promise<void> | undefined
+async function refreshGroups(groupIds: string[]) {
+  if (refreshing) return
+  refreshing = (async () => {
+    const data = await readData()
+    for (const id of groupIds) {
+      if (isOffline()) return
+      if (Date.now() - (data.snapshots[id]?.savedAt ?? 0) < 30000) continue
+      await refreshSnapshot(id).catch(() => {})
+    }
+  })().finally(() => {
+    refreshing = undefined
+  })
+}
+
 export async function offlineQuery(path: string, input: Record<string, any>) {
   let data = await readData()
-  if (path === 'groups.list') {
-    if (!state.offline && navigator.onLine) return undefined
-    return {
-      groups: (input.groupIds as string[]).flatMap((id) => {
-        const saved = data.snapshots[id]
-        if (!saved) return []
-        const snapshot = project(saved, data.queue)
-        return [
-          {
-            ...snapshot.group,
-            createdAt: snapshot.group.createdAt.toISOString(),
-            _count: { participants: snapshot.group.participants.length },
-            balances: getPublicBalances(
-              getSuggestedReimbursements(getBalances(listExpenses(snapshot))),
-            ),
-          },
-        ]
-      }),
-    }
-  }
+  if (path === 'groups.list') return listGroups(input.groupIds, data)
   const groupId = input.groupId
   if (!groupId || !(path.startsWith('groups.') || path === 'categories.list'))
     return undefined
   if (!data.snapshots[groupId]) {
-    if (!navigator.onLine)
+    if (isOffline())
       throw new Error(
         'Diese Gruppe ist noch nicht offline gespeichert. Bitte einmal online öffnen.',
       )
@@ -133,11 +201,10 @@ export async function offlineQuery(path: string, input: Record<string, any>) {
     data = await readData()
   } else if (
     path === 'groups.get' &&
-    navigator.onLine &&
-    !state.offline &&
+    !isOffline() &&
     Date.now() - data.snapshots[groupId].savedAt > 30000
   ) {
-    void refreshSnapshot(groupId).catch(() => status({ offline: true }))
+    void refreshSnapshot(groupId).catch(() => {})
   }
   void warmPages(groupId)
   return localQuery(path, input, project(data.snapshots[groupId], data.queue))
@@ -187,6 +254,7 @@ export async function sync() {
     }
     if (state.conflict) return
     status({ syncing: true, error: null })
+    const since = epoch
     let applied = false
     const touched = new Set<string>()
     try {
@@ -227,7 +295,7 @@ export async function sync() {
               : error.message,
         })
       } else {
-        status({ offline: true })
+        markOffline(since)
       }
     } finally {
       status({ syncing: false, pending: (await readData()).queue.length })
@@ -274,15 +342,18 @@ export async function resolveConflict(keepLocal: boolean) {
 }
 
 export async function refreshOpenGroups() {
+  // Trust a real request over navigator.onLine, in both directions.
+  if (navigator.onLine) {
+    const since = epoch
+    const reachable = await probe()
+    if (since === epoch && reachable === state.offline)
+      status({ offline: !reachable })
+  }
   await sync()
-  if (!navigator.onLine || state.error || state.conflict) return
+  if (isOffline() || state.error || state.conflict) return
   const data = await readData()
   const match = location.pathname.match(/^\/groups\/([^/]+)/)
   if (match && data.snapshots[match[1]]) {
-    try {
-      await refreshSnapshot(match[1])
-    } catch {
-      status({ offline: true })
-    }
+    await refreshSnapshot(match[1]).catch(() => {})
   }
 }

@@ -1,9 +1,17 @@
 // Spliit Service Worker with Push Notifications + Auto-Update
 
-// Cache name includes version for cache busting
 const CACHE_VERSION = '__BUILD_VERSION__'
-const CACHE = `spliit-offline-v1-${CACHE_VERSION}`
+// One cache across deployments. /_next/static files are content-hashed, and a
+// cached page keeps working with the bundles it references. A per-version
+// cache started empty after every update: iOS activates a waiting worker on
+// the next cold start, which then could not open anything offline.
+const CACHE = 'spliit-offline'
+const LEGACY_CACHE_PREFIX = 'spliit-offline-v1-'
 const FALLBACK = '/offline.html'
+// Start page of the installed app (manifest start_url) and the root alias.
+const SHELL = ['/groups', '/']
+// Give a slow network this long before a launch falls back to the saved page.
+const NAVIGATION_TIMEOUT = 3500
 
 function documentAssets(html) {
   return [
@@ -80,18 +88,62 @@ async function cacheDocument(path) {
   )
 }
 
+// Carry pages and bundles over from the per-version caches of older workers.
+async function migrateLegacyCaches() {
+  const cache = await caches.open(CACHE)
+  for (const name of await caches.keys()) {
+    if (!name.startsWith(LEGACY_CACHE_PREFIX)) continue
+    const legacy = await caches.open(name)
+    for (const request of await legacy.keys()) {
+      if (await cache.match(request)) continue
+      const response = await legacy.match(request)
+      if (response) await cache.put(request, response)
+    }
+  }
+}
+
+// Drop bundles that no saved page references any more (older deployments).
+async function pruneAssets() {
+  const cache = await caches.open(CACHE)
+  const keys = await cache.keys()
+  const referenced = new Set()
+  for (const request of keys) {
+    const response = await cache.match(request)
+    if (!response?.headers.get('content-type')?.includes('text/html')) continue
+    for (const url of documentAssets(await response.text())) referenced.add(url)
+  }
+  for (const request of keys) {
+    const path = new URL(request.url).pathname
+    if (path.startsWith('/_next/static/') && !referenced.has(path))
+      await cache.delete(request)
+  }
+}
+
 self.addEventListener('install', (event) => {
   // Updates wait for explicit activation. Never reload an open expense form.
   event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll([FALLBACK, '/android-chrome-192x192.png'])),
+    (async () => {
+      const cache = await caches.open(CACHE)
+      await cache.addAll([FALLBACK, '/android-chrome-192x192.png'])
+      await migrateLegacyCaches()
+      // Best effort: the installed app can start offline even before a group
+      // was opened. Failure must not block the worker installation.
+      for (const path of SHELL) await cacheDocument(path).catch(() => {})
+    })(),
   )
 })
 
 self.addEventListener('activate', (event) => {
-  // Claim all clients so the new SW takes effect immediately
-  event.waitUntil(self.clients.claim())
+  event.waitUntil(
+    (async () => {
+      await migrateLegacyCaches()
+      for (const name of await caches.keys())
+        if (name.startsWith(LEGACY_CACHE_PREFIX)) await caches.delete(name)
+      await pruneAssets().catch(() => {})
+      // Claim all clients so the new SW takes effect immediately
+      await self.clients.claim()
+    })(),
+  )
 })
 
 // Listen for skip-waiting message from the app
@@ -170,20 +222,39 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE)
-        try {
-          const response = await fetch(request)
+        const network = fetch(request).then(async (response) => {
           if (
             response.ok &&
             response.headers.get('content-type')?.includes('text/html')
           )
             await cache.put(url.pathname, response.clone())
-          if (response.status < 500) return response
-        } catch {
-          /* Offline, including cold starts. */
+          if (response.status >= 500) throw new Error('Server error')
+          return response
+        })
+        // Weak connections must not leave the installed app on a white screen:
+        // after a short wait, open the saved page instead. Read the cache only
+        // then; holding a cached copy while the same entry is being replaced
+        // crashed WebKit's storage process.
+        const first = await Promise.race([
+          network.then(
+            (response) => ({ response }),
+            () => ({ failed: true }),
+          ),
+          new Promise((resolve) =>
+            setTimeout(() => resolve({}), NAVIGATION_TIMEOUT),
+          ),
+        ])
+        if (first.response) return first.response
+        const cached = await cache.match(url.pathname)
+        if (cached) return cached
+        if (!first.failed) {
+          try {
+            return await network
+          } catch {
+            /* Offline, including cold starts. */
+          }
         }
-        return (
-          (await cache.match(url.pathname)) || (await cache.match(FALLBACK))
-        )
+        return cache.match(FALLBACK)
       })(),
     )
   }

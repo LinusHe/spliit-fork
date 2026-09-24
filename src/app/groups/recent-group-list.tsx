@@ -6,6 +6,7 @@ import {
   getRecentGroups,
   getStarredGroups,
 } from '@/app/groups/recent-groups-helpers'
+import { useOfflineStatus } from '@/components/offline-status'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -118,9 +119,23 @@ function RecentGroupList_({
   const [query, setQuery] = useState('')
   const [sortMode, setSortMode] = useState<SortMode>('recent')
   const [hideSettled, setHideSettled] = useState(false)
-  const { data, isLoading } = trpc.groups.list.useQuery({
+  const { offline } = useOfflineStatus()
+  const { data, isLoading, isError, refetch } = trpc.groups.list.useQuery({
     groupIds: groups.map((group) => group.id),
   })
+
+  if (isError && !data) {
+    return (
+      <GroupsPage reload={refreshGroupsFromStorage}>
+        <div className="text-sm space-y-2">
+          <p>Gruppen konnten gerade nicht geladen werden.</p>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            Erneut versuchen
+          </Button>
+        </div>
+      </GroupsPage>
+    )
+  }
 
   if (isLoading || !data) {
     return (
@@ -133,7 +148,8 @@ function RecentGroupList_({
     )
   }
 
-  if (data.groups.length === 0) {
+  // Offline, groups without a local copy still show up (marked unavailable).
+  if (data.groups.length === 0 && !(offline && groups.length > 0)) {
     return (
       <GroupsPage reload={refreshGroupsFromStorage}>
         <div className="text-sm space-y-2">

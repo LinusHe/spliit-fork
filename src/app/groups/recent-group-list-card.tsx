@@ -6,6 +6,7 @@ import {
   unarchiveGroup,
   unstarGroup,
 } from '@/app/groups/recent-groups-helpers'
+import { useOfflineStatus } from '@/components/offline-status'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -16,12 +17,14 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/use-toast'
 import { useActiveUser } from '@/lib/hooks'
+import { isOffline } from '@/lib/offline/engine'
 import { cn, formatCurrency, getCurrencyFromGroup } from '@/lib/utils'
 import { AppRouterOutput } from '@/trpc/routers/_app'
 import { StarFilledIcon } from '@radix-ui/react-icons'
 import {
   Calendar,
   CircleCheck,
+  CloudOff,
   MoreHorizontal,
   Star,
   TrendingDown,
@@ -32,7 +35,6 @@ import {
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getSyncState } from '@/lib/offline/engine'
 
 export function RecentGroupListCard({
   group,
@@ -52,6 +54,9 @@ export function RecentGroupListCard({
   const toast = useToast()
   const t = useTranslations('Groups')
   const activeUser = useActiveUser(group.id)
+  const { offline } = useOfflineStatus()
+  // Offline, the list only knows groups that have a copy on this device.
+  const unavailable = offline && !groupDetail
   const balance =
     activeUser && activeUser !== 'None'
       ? groupDetail?.balances[activeUser]?.total ?? 0
@@ -64,7 +69,10 @@ export function RecentGroupListCard({
     <li key={group.id}>
       <Button
         variant="secondary"
-        className="h-fit w-full py-3 rounded-lg border bg-card shadow-sm"
+        className={cn(
+          'h-fit w-full py-3 rounded-lg border bg-card shadow-sm',
+          unavailable && 'opacity-60',
+        )}
         asChild
       >
         <div
@@ -72,18 +80,30 @@ export function RecentGroupListCard({
           className="text-base"
           onClick={() => {
             const href = `/groups/${group.id}`
-            if (!navigator.onLine || getSyncState().offline) location.assign(href)
+            if (unavailable)
+              toast.toast({
+                title: 'Offline nicht verfügbar',
+                description:
+                  'Diese Gruppe wurde auf diesem Gerät noch nicht gespeichert. Öffne sie einmal mit Internet, dann klappt es auch offline.',
+              })
+            else if (isOffline()) location.assign(href)
             else router.push(href)
           }}
         >
           <div className="w-full flex flex-col gap-1">
             <div className="text-base flex gap-2 justify-between">
-              <Link
-                href={`/groups/${group.id}`}
-                className="flex-1 overflow-hidden text-ellipsis"
-              >
-                {group.name}
-              </Link>
+              {unavailable ? (
+                <span className="flex-1 overflow-hidden text-ellipsis">
+                  {group.name}
+                </span>
+              ) : (
+                <Link
+                  href={`/groups/${group.id}`}
+                  className="flex-1 overflow-hidden text-ellipsis"
+                >
+                  {group.name}
+                </Link>
+              )}
               <span className="flex-shrink-0">
                 <Button
                   size="icon"
@@ -177,6 +197,11 @@ export function RecentGroupListCard({
                     locale={locale}
                   />
                 </div>
+              ) : unavailable ? (
+                <span className="inline-flex items-center gap-1">
+                  <CloudOff className="h-3 w-3" />
+                  Offline nicht verfügbar
+                </span>
               ) : (
                 <div className="flex justify-between">
                   <Skeleton className="h-4 w-6 rounded-full" />

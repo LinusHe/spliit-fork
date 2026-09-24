@@ -1,150 +1,8 @@
-import { expect, type APIRequestContext, type Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 import superjson from 'superjson'
+import { api, editTitle, fixture, openGroup } from './offline-helpers'
 import { test } from './offline-network'
-
-async function api(
-  request: APIRequestContext,
-  path: string,
-  input: unknown,
-  write = false,
-) {
-  const response = write
-    ? await request.post(`http://127.0.0.1:3133/api/trpc/${path}`, {
-        data: superjson.serialize(input),
-      })
-    : await request.get(
-        `http://127.0.0.1:3133/api/trpc/${path}?input=${encodeURIComponent(
-          superjson.stringify(input),
-        )}`,
-      )
-  const json = await response.json()
-  expect(response.ok(), JSON.stringify(json)).toBeTruthy()
-  return superjson.deserialize<any>(json.result.data)
-}
-
-async function fixture(request: APIRequestContext) {
-  const { groupId } = await api(
-    request,
-    'groups.create',
-    {
-      groupFormValues: {
-        name: 'Offline Test',
-        currency: '€',
-        currencyCode: 'EUR',
-        participants: [{ name: 'Alice' }, { name: 'Bob' }],
-      },
-    },
-    true,
-  )
-  const { group } = await api(request, 'groups.get', { groupId })
-  const values = {
-    title: 'Original Dinner',
-    amount: 2400,
-    expenseDate: new Date('2026-09-17T00:00:00Z'),
-    category: 0,
-    paidBy: group.participants[0].id,
-    paidFor: group.participants.map((p: any) => ({
-      participant: p.id,
-      shares: 1,
-    })),
-    splitMode: 'EVENLY',
-    isReimbursement: false,
-    saveDefaultSplittingOptions: false,
-    documents: [],
-    recurrenceRule: 'NONE',
-    notes: '',
-  }
-  const { expenseId } = await api(
-    request,
-    'groups.expenses.create',
-    { groupId, expenseFormValues: values },
-    true,
-  )
-  const { expense } = await api(request, 'groups.expenses.get', {
-    groupId,
-    expenseId,
-  })
-  const mutation = {
-    id: randomUUID(),
-    kind: 'update',
-    groupId,
-    expenseId,
-    baseVersion: expense.syncVersion,
-    groupCurrency: JSON.stringify(['€', 'EUR']),
-    values: { ...values, title: 'Offline Dinner' },
-    localTime: Date.now(),
-  }
-  return { groupId, group, expenseId, values, expense, mutation }
-}
-
-async function openGroup(page: Page, f: Awaited<ReturnType<typeof fixture>>) {
-  await page.addInitScript(() => {
-    // Keep the unrelated third-visit push opt-in dialog from covering controls.
-    localStorage.setItem('spliit-notification-prompt-dismissed', 'true')
-    Object.defineProperty(navigator, 'onLine', {
-      configurable: true,
-      get: () => localStorage.getItem('__spliit-test-offline') !== 'true',
-    })
-  })
-  await page.addInitScript(
-    ({ groupId, participantId }) =>
-      localStorage.setItem(`${groupId}-activeUser`, participantId),
-    { groupId: f.groupId, participantId: f.group.participants[0].id },
-  )
-  await page.goto(`/groups/${f.groupId}/expenses`)
-  await expect(page.getByText('Original Dinner', { exact: true })).toBeVisible()
-  // Only the application's automatic preparation may populate the cache.
-  // The tests must not repair missing assets by sending WARM_URLS themselves.
-  await page.goto(`/groups/${f.groupId}/edit`)
-  await expect(
-    page.locator('[data-testid="group-offline-ready"]:visible'),
-  ).toHaveText('Auf diesem Gerät offline bereit', { timeout: 60000 })
-  await page.goto(`/groups/${f.groupId}/expenses`)
-  await expect(page.getByText('Original Dinner', { exact: true })).toBeVisible()
-}
-
-async function editTitle(page: Page, from: string, to: string) {
-  await page.getByText(from, { exact: true }).click()
-  try {
-    await expect(page.locator('input[name="title"]')).toBeVisible()
-  } catch (error) {
-    // Retain query-state evidence if a browser loses its local-storage handle.
-    console.log(
-      'OFFLINE_QUERY_DIAGNOSTICS',
-      await page.evaluate(() => {
-        const element = document.querySelector('main') as any
-        const key = Object.keys(element).find((key) =>
-          key.startsWith('__reactFiber'),
-        )
-        let root = key && element[key]
-        while (root?.return) root = root.return
-        const queue = [root]
-        while (queue.length) {
-          const fiber = queue.pop()
-          if (!fiber) continue
-          const client = fiber.memoizedProps?.client
-          if (client?.getQueryCache)
-            return client
-              .getQueryCache()
-              .getAll()
-              .map((q: any) => ({
-                key: q.queryKey,
-                status: q.state.status,
-                fetchStatus: q.state.fetchStatus,
-                error: q.state.error?.message,
-              }))
-          queue.push(fiber.child, fiber.sibling)
-        }
-        return 'Query client unavailable'
-      }),
-    )
-    throw error
-  }
-  await page.locator('input[name="title"]').fill(to)
-  await page.locator('button[type="submit"]').click()
-  await expect(page.locator('input[name="title"]')).not.toBeVisible()
-}
 
 test('closed IndexedDB connection is reopened before reading or writing', async ({
   page,
@@ -217,10 +75,10 @@ test('PWA launch from root survives a disconnected cold start', async ({
   ).toHaveText('Auf diesem Gerät offline bereit')
   await expect(
     page.locator('[data-testid="group-offline-settings"]:visible'),
-  ).toContainText('1 Ausgaben gespeichert')
+  ).toContainText('1 Ausgabe gespeichert')
   await expect(
     page.locator('[data-testid="group-offline-settings"]:visible'),
-  ).toContainText('1 lokale Änderungen warten auf Übertragung')
+  ).toContainText('1 lokale Änderung wartet auf Übertragung')
   await page.screenshot({
     path: test.info().outputPath('offline-settings.png'),
     fullPage: true,
@@ -241,7 +99,7 @@ test('settings detect missing cached assets and repair them without test-side wa
   ).toHaveText('Auf diesem Gerät offline bereit')
   await page.evaluate(async () => {
     for (const name of await caches.keys()) {
-      if (!name.startsWith('spliit-offline-v1-')) continue
+      if (!name.startsWith('spliit-offline')) continue
       const cache = await caches.open(name)
       for (const key of await cache.keys())
         if (key.url.endsWith('.js')) await cache.delete(key)
@@ -256,7 +114,9 @@ test('settings detect missing cached assets and repair them without test-side wa
     page.locator('[data-testid="group-offline-settings"]:visible'),
   ).toContainText('Seiten/Dateien fehlen')
   await network.setOffline(context, false)
-  await page.getByRole('button', { name: 'Offline-Dateien laden' }).click()
+  await page
+    .getByRole('button', { name: 'Offline-Kopie aktualisieren' })
+    .click()
   await expect(
     page.locator('[data-testid="group-offline-ready"]:visible'),
   ).toHaveText('Auf diesem Gerät offline bereit', { timeout: 60000 })
@@ -622,9 +482,32 @@ test('lost acknowledgement retries the same creation without duplication', async
     .toBe(2)
   expect(network.wasDropped()).toBe(true)
   await page.reload()
-  await expect(page.getByTestId('offline-status')).toContainText(
-    'Alles synchronisiert',
-  )
+  // The retry may already run before the reload (connectivity probe) or after
+  // it; either way the durable queue must drain without a duplicate.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          new Promise<number>((resolve, reject) => {
+            const open = indexedDB.open('spliit-offline-v1', 1)
+            open.onerror = () => reject(open.error)
+            open.onsuccess = () => {
+              const read = open.result
+                .transaction('state')
+                .objectStore('state')
+                .get('data')
+              read.onsuccess = () => {
+                open.result.close()
+                const data = JSON.parse(read.result as string) as {
+                  json: { queue: unknown[] }
+                }
+                resolve(data.json.queue.length)
+              }
+            }
+          }),
+      ),
+    )
+    .toBe(0)
   expect(
     (await api(request, 'offline.snapshot', { groupId: f.groupId })).expenses,
   ).toHaveLength(2)

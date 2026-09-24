@@ -2,23 +2,32 @@
 
 ## User experience
 
-Open a group online, open its settings, and wait for **“Auf diesem Gerät offline
-bereit”** under **Offline-Verfügbarkeit**. A disappearing preparation pill alone
-is not a readiness guarantee. The settings card remains accessible offline and
-with pending mutations; it shows the local snapshot time/expense count, pending
-mutations for this group, checked pages/assets, missing files, and active worker
-version. “Offline-Stand prüfen” rechecks the actual cache even without a network;
-“Offline-Dateien laden” refreshes the snapshot and retries downloads online.
+Opening the app online stores every recent group on the device automatically:
+the group list (`/groups`, the PWA start page) answers from IndexedDB at once and
+refreshes each group snapshot (>30 s old) in the background, which also prepares
+its pages for offline use. Group settings → **Offline-Verfügbarkeit** shows
+**“Auf diesem Gerät offline bereit”**, the snapshot age/expense count and pending
+changes; technical details (checked pages/assets, worker version) are collapsed.
+“Offline-Stand prüfen” rechecks the actual cache even without a network;
+“Offline-Kopie aktualisieren” refreshes the snapshot and re-downloads all pages.
 Its complete expense data, participants and categories are stored in IndexedDB;
 the service worker saves the main group pages and their application bundles.
 The same expense drawer works offline: create, edit, delete and reimbursements.
 Balances, totals, filters and charts are calculated from the local state including
 pending changes. The activity log is the last downloaded server history (500 entries).
 
-A quiet status pill shows offline state, pending count, synchronization, success,
-and recoverable errors. Synchronization runs on reconnect, foregrounding the app,
-and every 30 seconds while visible. On iOS the app must be open; no promise of
-background delivery after closing an installed PWA is made.
+A colored status pill shows offline state (amber), pending/syncing (blue), success
+(green) and recoverable errors (red). It explains itself once per session and can
+be tapped for details. Offline, groups without a local copy are dimmed in the list
+(“Offline nicht verfügbar”) instead of leading to the fallback page.
+Synchronization runs on reconnect, foregrounding the app, and every 30 seconds
+while visible. On iOS the app must be open; no promise of background delivery
+after closing an installed PWA is made.
+
+**Connectivity is detected by requests, not `navigator.onLine`.** iOS PWAs keep
+reporting “online” on weak cellular or captive WiFi. A failed snapshot/list request
+switches the app to offline; a `/version.json` probe (never served from the SW
+cache) on start, foregrounding and every 30 s switches it back.
 
 Group creation/settings, uploads, receipt/category AI, location lookup and live
 currency rates require the network. Existing document metadata is retained, but
@@ -70,6 +79,16 @@ server actions and RSC responses are never cached. Offline tab navigation uses
 prewarmed HTML documents; expense drawers remain client-side. Unknown pages get
 an honest offline fallback, not a cached page from another group.
 
+All pages and bundles live in one cache (`spliit-offline`) shared across
+deployments; `/_next/static` files are content-hashed, so a saved page keeps
+working with the bundles it references. The former per-version caches
+(`spliit-offline-v1-<build>`) started empty after each deployment — and iOS
+activates a waiting worker at the next cold start, so the installed app could not
+open offline after an update. Installing a worker migrates the legacy caches and
+precaches `/groups` and `/`; activation deletes the legacy caches and prunes
+bundles no saved page references. Navigations use the network but fall back to
+the saved page after 3.5 s, so a weak connection does not leave a white screen.
+
 New workers wait for an explicit update, without forcibly reloading open forms.
 Update controls refuse while offline or while the durable queue is nonempty.
 IndexedDB is independent of deployment-versioned asset caches and never cleared
@@ -87,8 +106,10 @@ than uncached Next RSC requests. Activity expense links open the local drawer.
 
 Tests must rely on application-owned preparation, not send WARM_URLS directly.
 Regression scenarios include root/PWA launch, card-body navigation, settings with
-queued offline edits, evicted assets with repair, and a legacy installed worker
-followed by an explicit update. These supplement mutation/conflict/date tests.
+queued offline edits, evicted assets with repair, a legacy installed worker
+followed by an explicit update, and (`tests/offline-launch.spec.ts`) a start while
+the OS claims to be online, a new deployment activated at cold start, and groups
+never stored on the device. These supplement mutation/conflict/date tests.
 
 ## Date-only bug
 
