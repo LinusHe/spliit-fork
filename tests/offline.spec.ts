@@ -32,7 +32,9 @@ test('closed IndexedDB connection is reopened before reading or writing', async 
   }
   await page.reload()
   await expect(page.getByText('Reopened write', { exact: true })).toBeVisible()
-  await expect(page.getByTestId('offline-status')).toContainText('2 Änderungen')
+  await expect(
+    page.locator('[data-testid="offline-status"]:visible'),
+  ).toContainText('2 Änderungen')
   await network.setOffline(context, false)
   await expect
     .poll(
@@ -69,7 +71,7 @@ test('PWA launch from root survives a disconnected cold start', async ({
     .click({ position: { x: 12, y: 55 } })
   await expect(page.getByText('Original Dinner', { exact: true })).toBeVisible()
   await editTitle(page, 'Original Dinner', 'Flight mode edit')
-  await page.goto(`/groups/${f.groupId}/edit`)
+  await page.goto(`/groups/${f.groupId}/edit?offline-details`)
   await expect(
     page.locator('[data-testid="group-offline-ready"]:visible'),
   ).toHaveText('Auf diesem Gerät offline bereit')
@@ -93,7 +95,7 @@ test('settings detect missing cached assets and repair them without test-side wa
 }) => {
   const f = await fixture(request)
   await openGroup(page, f)
-  await page.goto(`/groups/${f.groupId}/edit`)
+  await page.goto(`/groups/${f.groupId}/edit?offline-details`)
   await expect(
     page.locator('[data-testid="group-offline-ready"]:visible'),
   ).toHaveText('Auf diesem Gerät offline bereit')
@@ -159,7 +161,7 @@ test('legacy installed worker is reported and explicit update enables offline la
       get: () => localStorage.getItem('__spliit-test-offline') !== 'true',
     }),
   )
-  await page.goto(`/groups/${f.groupId}/edit`)
+  await page.goto(`/groups/${f.groupId}/edit?offline-details`)
   await expect(
     page.locator('[data-testid="group-offline-settings"]:visible'),
   ).toContainText('Offline-Dienst antwortet nicht', { timeout: 20000 })
@@ -313,17 +315,25 @@ test('offline reload, local editing, balance navigation, reconnect conflict and 
   await openGroup(page, f)
   await network.setOffline(context, true)
   await page.reload()
-  await expect(page.getByTestId('offline-status')).toContainText('Offline')
+  await expect(
+    page.locator('[data-testid="offline-status"]:visible'),
+  ).toContainText('Offline')
   await editTitle(page, 'Original Dinner', 'My offline change')
   await expect(
     page.getByText('My offline change', { exact: true }),
   ).toBeVisible()
+  // The unsynchronized entry itself is marked.
+  await expect(page.locator('[data-pending]')).toContainText(
+    'Noch nicht synchronisiert',
+  )
   await page.reload()
   await expect(
     page.getByText('My offline change', { exact: true }),
   ).toBeVisible()
   await page.goto(`/groups/${f.groupId}/balances`)
-  await expect(page.getByTestId('offline-status')).toContainText('1 Änderung')
+  await expect(
+    page.locator('[data-testid="offline-status"]:visible'),
+  ).toContainText('1 Änderung')
   await page.goto(`/groups/${f.groupId}/expenses`)
   await api(
     request,
@@ -361,9 +371,11 @@ test('offline reload, local editing, balance navigation, reconnect conflict and 
         ).expense.title,
     )
     .toBe('My offline change')
-  await expect(page.getByTestId('offline-status')).toContainText(
-    'Alles synchronisiert',
-  )
+  // Online and synchronized: nothing of the offline mode is visible.
+  await expect(
+    page.locator('[data-testid="offline-status"]:visible'),
+  ).toHaveCount(0)
+  await expect(page.locator('[data-pending]')).toHaveCount(0)
   const keys = await page.evaluate(async () =>
     (
       await Promise.all(
@@ -399,7 +411,18 @@ test('conflict: keep online discards only that expense, defer survives reload', 
   )
   await network.setOffline(context, false)
   await page.getByRole('button', { name: 'Später entscheiden' }).click()
-  await expect(page.getByTestId('offline-status')).toContainText('Entscheidung')
+  await expect(
+    page.locator('[data-testid="offline-status"]:visible'),
+  ).toContainText('Entscheidung')
+  // The header badge reopens the deferred decision.
+  await page.locator('[data-testid="offline-status"]:visible').click()
+  await page.getByRole('button', { name: 'Jetzt prüfen' }).click()
+  await expect(
+    page.getByRole('heading', {
+      name: 'Diese Ausgabe wurde auch online geändert',
+    }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Später entscheiden' }).click()
   await page.reload()
   await page.getByRole('button', { name: 'Online-Stand behalten' }).click()
   await expect(page.getByText('Keep online', { exact: true })).toBeVisible()

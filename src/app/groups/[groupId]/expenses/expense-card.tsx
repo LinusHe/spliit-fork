@@ -6,9 +6,8 @@ import { Button } from '@/components/ui/button'
 import { getGroupExpenses } from '@/lib/api'
 import { Currency } from '@/lib/currency'
 import { cn, formatCurrency, formatDateOnly } from '@/lib/utils'
-import { ArrowLeftRight, ChevronRight, MapPin } from 'lucide-react'
+import { ArrowLeftRight, ChevronRight, CloudOff, MapPin } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
-import Link from 'next/link'
 import { Fragment } from 'react'
 import { useExpenseDrawerOptional } from './expense-drawer-context'
 
@@ -49,6 +48,8 @@ type Props = {
   currency: Currency
   groupId: string
   participantCount: number
+  /** Local change not yet on the server (shown while offline). */
+  pending?: boolean
 }
 
 export function ExpenseCard({
@@ -56,6 +57,7 @@ export function ExpenseCard({
   currency,
   groupId,
   participantCount,
+  pending,
 }: Props) {
   const locale = useLocale()
   const drawerCtx = useExpenseDrawerOptional()
@@ -76,7 +78,10 @@ export function ExpenseCard({
         expense.isReimbursement
           ? 'bg-muted/40 hover:bg-muted/70 text-muted-foreground'
           : 'hover:bg-accent',
+        pending &&
+          'border-l-4 border-amber-400 bg-amber-50 pl-3 hover:bg-amber-100/70 dark:border-amber-500 dark:bg-amber-950/30 dark:hover:bg-amber-950/50 sm:pl-3',
       )}
+      data-pending={pending || undefined}
       onClick={handleClick}
     >
       {expense.isReimbursement ? (
@@ -92,6 +97,12 @@ export function ExpenseCard({
           <span className={cn(expense.isReimbursement && 'italic')}>
             {expense.title}
           </span>
+          {pending && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900 dark:bg-amber-500/20 dark:text-amber-200">
+              <CloudOff className="h-3 w-3" />
+              Noch nicht synchronisiert
+            </span>
+          )}
         </div>
         <div className="text-xs text-muted-foreground">
           <Participants expense={expense} participantCount={participantCount} />

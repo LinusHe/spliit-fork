@@ -9,6 +9,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
   getServerSyncState,
   getSyncState,
   refreshOpenGroups,
@@ -18,41 +23,13 @@ import {
   subscribeSync,
   sync,
 } from '@/lib/offline/engine'
-import {
-  getReadiness,
-  getServerReadiness,
-  subscribeReadiness,
-} from '@/lib/offline/readiness'
 import { readData, subscribeData } from '@/lib/offline/storage'
 import type { Snapshot } from '@/lib/offline/types'
 import { cn, formatCurrency, getCurrencyFromGroup } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
-import {
-  AlertCircle,
-  Check,
-  CheckCircle2,
-  ChevronUp,
-  CloudOff,
-  Loader2,
-  RefreshCw,
-} from 'lucide-react'
-import { usePathname } from 'next/navigation'
+import { AlertCircle, CloudOff } from 'lucide-react'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import superjson from 'superjson'
-
-const TONES = {
-  offline:
-    'border-amber-300/70 bg-amber-50/95 text-amber-950 dark:border-amber-400/30 dark:bg-amber-950/90 dark:text-amber-50',
-  syncing:
-    'border-sky-200 bg-sky-50/95 text-sky-950 dark:border-sky-400/30 dark:bg-sky-950/90 dark:text-sky-50',
-  success:
-    'border-emerald-200 bg-emerald-50/95 text-emerald-900 dark:border-emerald-400/30 dark:bg-emerald-950/90 dark:text-emerald-50',
-  warning:
-    'border-amber-300/70 bg-amber-50/95 text-amber-950 dark:border-amber-400/30 dark:bg-amber-950/90 dark:text-amber-50',
-  error:
-    'border-red-200 bg-red-50/95 text-red-900 dark:border-red-400/30 dark:bg-red-950/90 dark:text-red-50',
-  neutral: 'bg-background/95 text-muted-foreground',
-}
 
 export function useOfflineStatus() {
   return useSyncExternalStore(subscribeSync, getSyncState, getServerSyncState)
@@ -60,30 +37,10 @@ export function useOfflineStatus() {
 
 export function OfflineStatus() {
   const state = useOfflineStatus()
-  const pathname = usePathname()
-  const groupId = pathname.match(/^\/groups\/([^/]+)/)?.[1] ?? ''
-  const files = useSyncExternalStore(
-    subscribeReadiness,
-    () => getReadiness(groupId),
-    getServerReadiness,
-  )
   const client = useQueryClient()
-  const [recent, setRecent] = useState(false)
   const [deferred, setDeferred] = useState<string | null>(null)
   const [snapshot, setSnapshot] = useState<Snapshot>()
   const [resolving, setResolving] = useState(false)
-  const [expanded, setExpanded] = useState(false)
-  // Explain the offline mode once per session (offline tab changes reload
-  // the page), then keep the pill compact.
-  useEffect(() => {
-    setExpanded(false)
-    if (!state.offline || sessionStorage.getItem('spliit-offline-explained'))
-      return
-    sessionStorage.setItem('spliit-offline-explained', '1')
-    setExpanded(true)
-    const timer = setTimeout(() => setExpanded(false), 6000)
-    return () => clearTimeout(timer)
-  }, [state.offline])
   // Back online: replace the locally answered queries with server data.
   const wasOffline = useRef(state.offline)
   useEffect(() => {
@@ -162,12 +119,12 @@ export function OfflineStatus() {
       document.removeEventListener('click', navigate, true)
     }
   }, [client])
+  // The header badge reopens a deferred conflict decision.
   useEffect(() => {
-    if (!state.lastSynced) return
-    setRecent(true)
-    const timer = setTimeout(() => setRecent(false), 5000)
-    return () => clearTimeout(timer)
-  }, [state.lastSynced])
+    const reopen = () => setDeferred(null)
+    window.addEventListener('spliit-open-conflict', reopen)
+    return () => window.removeEventListener('spliit-open-conflict', reopen)
+  }, [])
   useEffect(() => {
     if (state.conflict)
       void readData()
@@ -260,162 +217,8 @@ export function OfflineStatus() {
       setResolving(false)
     }
   }
-  const exportPending = async () => {
-    const data = await readData()
-    const url = URL.createObjectURL(
-      new Blob([superjson.stringify(data)], { type: 'application/json' }),
-    )
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'spliit-offline-sicherung.json'
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
-  }
-
-  const changes = (n: number) => `${n} Änderung${n === 1 ? '' : 'en'}`
-  const pill: {
-    tone: keyof typeof TONES
-    icon: typeof CloudOff
-    title: string
-    detail?: string
-    spin?: boolean
-  } | null = state.conflict
-    ? {
-        tone: 'warning',
-        icon: AlertCircle,
-        title: 'Abgleich benötigt eine Entscheidung',
-        detail:
-          'Eine Ausgabe wurde auch online geändert. Deine Version bleibt gespeichert, bis du entschieden hast.',
-      }
-    : state.error
-    ? {
-        tone: 'error',
-        icon: AlertCircle,
-        title: state.error,
-        detail: state.pending
-          ? `${changes(state.pending)} ${
-              state.pending === 1 ? 'bleibt' : 'bleiben'
-            } sicher auf diesem Gerät gespeichert.`
-          : undefined,
-      }
-    : state.offline
-    ? {
-        tone: 'offline',
-        icon: CloudOff,
-        title: 'Offline',
-        detail: state.pending
-          ? 'Deine Änderungen sind auf diesem Gerät gespeichert und werden automatisch übertragen, sobald du wieder online bist.'
-          : 'Du siehst den zuletzt gespeicherten Stand. Neue Ausgaben kannst du trotzdem erfassen – sie werden später übertragen.',
-      }
-    : state.pending
-    ? {
-        tone: 'syncing',
-        icon: state.syncing ? Loader2 : RefreshCw,
-        spin: state.syncing,
-        title: state.syncing
-          ? `${changes(state.pending)} werden abgeglichen …`
-          : `${changes(state.pending)} warten auf Abgleich`,
-      }
-    : recent
-    ? { tone: 'success', icon: CheckCircle2, title: 'Alles synchronisiert' }
-    : files.preparing
-    ? {
-        tone: 'neutral',
-        icon: Loader2,
-        spin: true,
-        title: 'Offline-Kopie wird gespeichert …',
-      }
-    : files.error
-    ? {
-        tone: 'neutral',
-        icon: CloudOff,
-        title: 'Offline-Kopie unvollständig',
-        detail:
-          'Details und Reparatur findest du in den Gruppeneinstellungen unter „Offline-Verfügbarkeit“.',
-      }
-    : null
-  const Icon = pill?.icon ?? Check
-  const showDetail = Boolean(pill?.detail && expanded)
   return (
     <>
-      {pill && (
-        <div className="pointer-events-none fixed inset-x-3 bottom-24 z-[60] flex justify-center md:bottom-4">
-          <div
-            className={cn(
-              'pointer-events-auto max-w-md rounded-2xl border px-3.5 py-2 text-sm shadow-lg backdrop-blur transition-colors',
-              TONES[pill.tone],
-            )}
-            role="status"
-            aria-live="polite"
-            data-testid="offline-status"
-          >
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 text-left disabled:cursor-default"
-              disabled={!pill.detail}
-              aria-expanded={pill.detail ? showDetail : undefined}
-              onClick={() => setExpanded((open) => !open)}
-            >
-              <Icon
-                className={cn('h-4 w-4 shrink-0', pill.spin && 'animate-spin')}
-              />
-              <span className="font-medium">{pill.title}</span>
-              {state.offline && !state.conflict && !state.error && (
-                <span className="whitespace-nowrap rounded-full bg-black/5 px-2 dark:bg-white/10 py-0.5 text-xs font-medium">
-                  <span className="opacity-90">
-                    {state.pending
-                      ? `${changes(state.pending)} lokal`
-                      : 'Lokaler Stand'}
-                  </span>
-                </span>
-              )}
-              {pill.detail && (
-                <ChevronUp
-                  className={cn(
-                    'ml-auto h-4 w-4 shrink-0 opacity-60 transition-transform',
-                    !showDetail && 'rotate-180',
-                  )}
-                />
-              )}
-            </button>
-            {showDetail && (
-              <p className="mt-1.5 text-xs leading-relaxed opacity-80">
-                {pill.detail}
-              </p>
-            )}
-            {(state.conflict || state.error) && (
-              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium">
-                {state.conflict && (
-                  <button
-                    className="underline underline-offset-2"
-                    onClick={() => setDeferred(null)}
-                  >
-                    Prüfen
-                  </button>
-                )}
-                {state.error && (
-                  <button
-                    className="underline underline-offset-2"
-                    onClick={() => void sync()}
-                  >
-                    Erneut versuchen
-                  </button>
-                )}
-                {state.error && state.pending > 0 && (
-                  <button
-                    className="underline underline-offset-2"
-                    onClick={() =>
-                      void exportPending().catch(reportStorageError)
-                    }
-                  >
-                    Lokale Änderungen als Datei sichern
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
       <Dialog
         open={!!conflict && deferred !== conflict.mutation.id}
         onOpenChange={(open) => {
@@ -501,3 +304,163 @@ export function OfflineStatus() {
     </>
   )
 }
+
+async function exportPending() {
+  const data = await readData()
+  const url = URL.createObjectURL(
+    new Blob([superjson.stringify(data)], { type: 'application/json' }),
+  )
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'spliit-offline-sicherung.json'
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+const changes = (n: number) => `${n} Änderung${n === 1 ? '' : 'en'}`
+
+// Header badge: invisible while everything works online. Offline it says so;
+// sync problems and pending conflict decisions are shown the same way.
+export function OfflineBadge() {
+  const state = useOfflineStatus()
+  const badge = state.conflict
+    ? {
+        label: 'Entscheidung nötig',
+        className:
+          'bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200',
+        icon: AlertCircle,
+      }
+    : state.error
+    ? {
+        label: 'Sync-Fehler',
+        className:
+          'bg-red-100 text-red-900 dark:bg-red-500/20 dark:text-red-200',
+        icon: AlertCircle,
+      }
+    : state.offline
+    ? {
+        label: 'Offline',
+        className:
+          'bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200',
+        icon: CloudOff,
+      }
+    : null
+  if (!badge) return null
+  const Icon = badge.icon
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          data-testid="offline-status"
+          className={cn(
+            'mr-1 inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium',
+            badge.className,
+          )}
+        >
+          <Icon className="h-3.5 w-3.5" />
+          {badge.label}
+          {state.pending > 0 && (
+            <span className="rounded-full bg-black/10 px-1.5 tabular-nums dark:bg-white/15">
+              {state.pending}
+              <span className="sr-only"> {changes(state.pending)}</span>
+            </span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-72 space-y-2 text-sm">
+        {state.conflict ? (
+          <>
+            <p className="font-medium">Abgleich braucht eine Entscheidung</p>
+            <p className="text-muted-foreground">
+              Eine Ausgabe wurde auch online geändert. Deine Version bleibt
+              gespeichert, bis du entschieden hast.
+            </p>
+            <Button
+              size="sm"
+              onClick={() =>
+                window.dispatchEvent(new Event('spliit-open-conflict'))
+              }
+            >
+              Jetzt prüfen
+            </Button>
+          </>
+        ) : state.error ? (
+          <>
+            <p className="font-medium">Abgleich fehlgeschlagen</p>
+            <p className="text-muted-foreground">{state.error}</p>
+            {state.pending > 0 && (
+              <p className="text-muted-foreground">
+                {changes(state.pending)}{' '}
+                {state.pending === 1 ? 'bleibt' : 'bleiben'} sicher auf diesem
+                Gerät gespeichert.
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => void sync()}>
+                Erneut versuchen
+              </Button>
+              {state.pending > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void exportPending().catch(reportStorageError)}
+                >
+                  Als Datei sichern
+                </Button>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="font-medium">Du bist offline</p>
+            <p className="text-muted-foreground">
+              {state.pending
+                ? `${changes(state.pending)} ${
+                    state.pending === 1 ? 'ist' : 'sind'
+                  } auf diesem Gerät gespeichert und ${
+                    state.pending === 1 ? 'wird' : 'werden'
+                  } automatisch übertragen, sobald du wieder online bist. ${
+                    state.pending === 1 ? 'Sie ist' : 'Sie sind'
+                  } in der Liste markiert.`
+                : 'Du siehst den zuletzt gespeicherten Stand. Neue Ausgaben kannst du trotzdem erfassen – sie werden später übertragen.'}
+            </p>
+          </>
+        )}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+// IDs of expenses with local changes that have not reached the server yet.
+// Only reported while that is noteworthy (offline or sync blocked), so a
+// normal online save does not flash a marker.
+export function usePendingExpenseIds(groupId: string) {
+  const state = useOfflineStatus()
+  const [ids, setIds] = useState<Set<string>>(() => new Set())
+  useEffect(() => {
+    let live = true
+    const read = () =>
+      readData()
+        .then((data) => {
+          if (live)
+            setIds(
+              new Set(
+                data.queue
+                  .filter((m) => m.groupId === groupId)
+                  .map((m) => m.expenseId),
+              ),
+            )
+        })
+        .catch(() => {})
+    void read()
+    const stop = subscribeData(() => void read())
+    return () => {
+      live = false
+      stop()
+    }
+  }, [groupId, state.pending])
+  const visible = state.offline || !!state.error || !!state.conflict
+  return visible ? ids : EMPTY_IDS
+}
+const EMPTY_IDS = new Set<string>()

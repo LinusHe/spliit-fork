@@ -1,6 +1,7 @@
 'use client'
 import { ExpenseCard } from '@/app/groups/[groupId]/expenses/expense-card'
 import { getGroupExpensesAction } from '@/app/groups/[groupId]/expenses/expense-list-fetch-action'
+import { usePendingExpenseIds } from '@/components/offline-status'
 import { Button } from '@/components/ui/button'
 import { SearchBar } from '@/components/ui/search-bar'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -178,6 +179,7 @@ const ExpenseListForSearch = ({
   const utils = trpc.useUtils()
   const { group } = useCurrentGroup()
   const locale = useLocale()
+  const pendingIds = usePendingExpenseIds(groupId)
 
   useEffect(() => {
     // Until we use tRPC more widely and can invalidate the cache on expense
@@ -286,6 +288,7 @@ const ExpenseListForSearch = ({
                     currency={getCurrencyFromGroup(group)}
                     groupId={groupId}
                     participantCount={group.participants.length}
+                    pending={pendingIds.has(expense.id)}
                   />
                 </div>
               )

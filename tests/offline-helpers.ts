@@ -102,7 +102,7 @@ export async function openGroup(
   await expect(page.getByText('Original Dinner', { exact: true })).toBeVisible()
   // Only the application's automatic preparation may populate the cache.
   // The tests must not repair missing assets by sending WARM_URLS themselves.
-  await page.goto(`/groups/${f.groupId}/edit`)
+  await page.goto(`/groups/${f.groupId}/edit?offline-details`)
   await expect(
     page.locator('[data-testid="group-offline-ready"]:visible'),
   ).toHaveText('Auf diesem Gerät offline bereit', { timeout: 60000 })

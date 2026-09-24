@@ -1,6 +1,7 @@
 'use client'
 
 import { ShareButton } from '@/app/groups/[groupId]/share-button'
+import { OfflineBadge } from '@/components/offline-status'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -36,6 +37,7 @@ export const GroupHeader = () => {
 
       {/* Right: Actions */}
       <div className="flex gap-0.5 items-center shrink-0">
+        <OfflineBadge />
         {group && <ShareButton group={group} />}
         <Button variant="ghost" size="icon" asChild className="h-9 w-9">
           <Link href={`/groups/${groupId}/edit`}>

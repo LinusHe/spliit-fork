@@ -1,4 +1,5 @@
 import { ApplePwaSplash } from '@/app/apple-pwa-splash'
+import { OfflineBadge } from '@/components/offline-status'
 import { ProgressBar } from '@/components/progress-bar'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -76,6 +77,7 @@ function Content({ children }: { children: React.ReactNode }) {
           Spliit
         </Link>
         <div className="flex gap-0.5 items-center shrink-0">
+          <OfflineBadge />
           <Button variant="ghost" size="icon" asChild className="h-9 w-9">
             <Link href="/settings" title={t('Settings.open')}>
               <Settings className="w-[18px] h-[18px]" />

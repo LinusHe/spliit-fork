@@ -5,21 +5,25 @@
 Opening the app online stores every recent group on the device automatically:
 the group list (`/groups`, the PWA start page) answers from IndexedDB at once and
 refreshes each group snapshot (>30 s old) in the background, which also prepares
-its pages for offline use. Group settings → **Offline-Verfügbarkeit** shows
-**“Auf diesem Gerät offline bereit”**, the snapshot age/expense count and pending
-changes; technical details (checked pages/assets, worker version) are collapsed.
-“Offline-Stand prüfen” rechecks the actual cache even without a network;
-“Offline-Kopie aktualisieren” refreshes the snapshot and re-downloads all pages.
-Its complete expense data, participants and categories are stored in IndexedDB;
-the service worker saves the main group pages and their application bundles.
-The same expense drawer works offline: create, edit, delete and reimbursements.
-Balances, totals, filters and charts are calculated from the local state including
-pending changes. The activity log is the last downloaded server history (500 entries).
+its pages for offline use. Its complete expense data, participants and categories
+are stored in IndexedDB; the service worker saves the main group pages and their
+application bundles. The same expense drawer works offline: create, edit, delete
+and reimbursements. Balances, totals, filters and charts are calculated from the
+local state including pending changes. The activity log is the last downloaded
+server history (500 entries).
 
-A colored status pill shows offline state (amber), pending/syncing (blue), success
-(green) and recoverable errors (red). It explains itself once per session and can
-be tapped for details. Offline, groups without a local copy are dimmed in the list
+**Online, nothing of the offline mode is visible.** There is no status toast and
+no download hint. Offline, an amber **Offline** badge (with the pending count)
+appears in the header; tapping it explains the state. Expenses with local changes
+not yet on the server are marked in the list (amber bar, “Noch nicht
+synchronisiert”) while offline or while sync is blocked. The same badge turns
+into **Sync-Fehler** (retry, JSON backup) or **Entscheidung nötig** (reopens a
+deferred conflict). Offline, groups without a local copy are dimmed in the list
 (“Offline nicht verfügbar”) instead of leading to the fallback page.
+
+Group settings → **Offline-Verfügbarkeit** (snapshot age, pending changes, cache
+check/repair, technical details) is shown only while offline, or online via
+`/groups/<id>/edit?offline-details` for diagnosis and tests.
 Synchronization runs on reconnect, foregrounding the app, and every 30 seconds
 while visible. On iOS the app must be open; no promise of background delivery
 after closing an installed PWA is made.

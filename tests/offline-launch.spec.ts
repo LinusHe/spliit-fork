@@ -16,7 +16,9 @@ test('PWA start page works without a connection while the OS claims to be online
   await expect(card).toContainText('Offline Test')
   // The balance comes from the local copy instead of an endless spinner.
   await expect(card).toContainText('12')
-  await expect(page.getByTestId('offline-status')).toContainText('Offline')
+  await expect(
+    page.locator('[data-testid="offline-status"]:visible'),
+  ).toContainText('Offline')
   await card.click({ position: { x: 12, y: 55 } })
   await expect(page.getByText('Original Dinner', { exact: true })).toBeVisible()
 })
