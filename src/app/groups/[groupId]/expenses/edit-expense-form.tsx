@@ -1,8 +1,9 @@
 'use client'
 import { RuntimeFeatureFlags } from '@/lib/featureFlags'
-import { amountAsDecimal, getCurrencyFromGroup } from '@/lib/utils'
+import { getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
 import { useRouter } from 'next/navigation'
+import { duplicateExpenseParams } from './duplicate-expense'
 import { ExpenseForm } from './expense-form'
 
 export function EditExpenseForm({
@@ -42,19 +43,10 @@ export function EditExpenseForm({
       ? [...categories, expense.category]
       : categories
 
-  // Build duplicate link with query params
-  const duplicateParams = new URLSearchParams()
-  if (expense.title) duplicateParams.set('title', expense.title)
-  const groupCurrency = getCurrencyFromGroup(group)
-  if (expense.amount != null)
-    duplicateParams.set(
-      'amount',
-      String(amountAsDecimal(expense.amount, groupCurrency)),
-    )
-  if (expense.paidBy?.id) duplicateParams.set('from', expense.paidBy.id)
-  if (expense.category?.id != null)
-    duplicateParams.set('categoryId', String(expense.category.id))
-  if (expense.isReimbursement) duplicateParams.set('reimbursement', '1')
+  const duplicateParams = duplicateExpenseParams(
+    expense,
+    getCurrencyFromGroup(group),
+  )
   const duplicateUrl = `/groups/${groupId}/expenses/create?${duplicateParams.toString()}`
 
   return (

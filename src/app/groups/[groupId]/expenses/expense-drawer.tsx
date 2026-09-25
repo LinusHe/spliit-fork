@@ -4,10 +4,11 @@ import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { useMediaQuery } from '@/lib/hooks'
 import { RuntimeFeatureFlags } from '@/lib/featureFlags'
-import { amountAsDecimal, getCurrencyFromGroup } from '@/lib/utils'
+import { getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
 import { useCurrentGroup } from '../current-group-context'
 import { useExpenseDrawer } from './expense-drawer-context'
+import { duplicateExpenseParams } from './duplicate-expense'
 import { ExpenseForm } from './expense-form'
 
 export function ExpenseDrawer({
@@ -117,19 +118,10 @@ function EditExpenseInDrawer({
       ? [...categories, expense.category]
       : categories
 
-  // Build duplicate params
-  const duplicateParams = new URLSearchParams()
-  if (expense.title) duplicateParams.set('title', expense.title)
-  const groupCurrency = getCurrencyFromGroup(group)
-  if (expense.amount != null)
-    duplicateParams.set(
-      'amount',
-      String(amountAsDecimal(expense.amount, groupCurrency)),
-    )
-  if (expense.paidBy?.id) duplicateParams.set('from', expense.paidBy.id)
-  if (expense.category?.id != null)
-    duplicateParams.set('categoryId', String(expense.category.id))
-  if (expense.isReimbursement) duplicateParams.set('reimbursement', '1')
+  const duplicateParams = duplicateExpenseParams(
+    expense,
+    getCurrencyFromGroup(group),
+  )
 
   const handleDuplicate = () => {
     closeDrawer()

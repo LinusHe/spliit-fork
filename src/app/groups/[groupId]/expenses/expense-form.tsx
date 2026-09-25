@@ -61,6 +61,7 @@ import { AppRouterOutput } from '@/trpc/routers/_app'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { RecurrenceRule } from '@prisma/client'
 import { CalendarIcon, ChevronRight, Copy, Save } from 'lucide-react'
+import { parseDuplicatedSplit } from './duplicate-expense'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -205,7 +206,12 @@ export function ExpenseForm({
   const getSelectedRecurrenceRule = (field?: { value: string }) => {
     return field?.value as RecurrenceRule
   }
-  const defaultSplittingOptions = getDefaultSplittingOptions(group)
+  // A duplicated expense brings its own split; otherwise use the defaults.
+  const defaultSplittingOptions =
+    parseDuplicatedSplit(
+      searchParams.get('split'),
+      group.participants.map(({ id }) => id),
+    ) ?? getDefaultSplittingOptions(group)
   const groupCurrency = getCurrencyFromGroup(group)
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseFormSchema),
