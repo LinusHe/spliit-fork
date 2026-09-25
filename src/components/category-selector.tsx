@@ -1,4 +1,4 @@
-import { ChevronDown, Loader2 } from 'lucide-react'
+import { Check, ChevronDown, Loader2 } from 'lucide-react'
 
 import { CategoryIcon } from '@/app/groups/[groupId]/expenses/category-icon'
 import { Button, ButtonProps } from '@/components/ui/button'
@@ -9,7 +9,11 @@ import {
   CommandInput,
   CommandItem,
 } from '@/components/ui/command'
-import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer'
+import {
+  MobilePickerSheet,
+  mobilePickerCommandClassName,
+  mobilePickerScrollClassName,
+} from '@/components/mobile-picker-sheet'
 import {
   Popover,
   PopoverContent,
@@ -38,6 +42,7 @@ export function CategorySelector({
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState<number>(defaultValue)
   const isDesktop = useMediaQuery('(min-width: 768px)')
+  const tForm = useTranslations('ExpenseForm')
 
   // allow overwriting currently selected category from outside
   useEffect(() => {
@@ -61,6 +66,7 @@ export function CategorySelector({
         <PopoverContent className="p-0" align="start">
           <CategoryCommand
             categories={categories}
+            selectedId={selectedCategory?.id}
             onValueChange={(id) => {
               setValue(id)
               onValueChange(id)
@@ -73,43 +79,43 @@ export function CategorySelector({
   }
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
+    <MobilePickerSheet
+      open={open}
+      onOpenChange={setOpen}
+      title={tForm('categoryField.label')}
+      className="h-[85dvh]"
+      trigger={
         <CategoryButton
           category={selectedCategory}
           open={open}
           isLoading={isLoading}
         />
-      </DrawerTrigger>
-      <DrawerContent
-        className="p-0 h-[85vh]"
-        // Prevent auto-focusing the search input on open: on mobile that pops up
-        // the on-screen keyboard, which shifts the layout while the user is tapping
-        // and causes taps to land on the wrong category (or nothing).
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        <CategoryCommand
-          categories={categories}
-          onValueChange={(id) => {
-            setValue(id)
-            onValueChange(id)
-            setOpen(false)
-          }}
-          className="flex-1 min-h-0"
-          scrollClassName="flex-1 max-h-none"
-        />
-      </DrawerContent>
-    </Drawer>
+      }
+    >
+      <CategoryCommand
+        categories={categories}
+        selectedId={selectedCategory?.id}
+        onValueChange={(id) => {
+          setValue(id)
+          onValueChange(id)
+          setOpen(false)
+        }}
+        className={mobilePickerCommandClassName}
+        scrollClassName={mobilePickerScrollClassName}
+      />
+    </MobilePickerSheet>
   )
 }
 
 function CategoryCommand({
   categories,
+  selectedId,
   onValueChange,
   className,
   scrollClassName,
 }: {
   categories: Category[]
+  selectedId?: Category['id']
   onValueChange: (categoryId: Category['id']) => void
   className?: string
   scrollClassName?: string
@@ -145,6 +151,9 @@ function CategoryCommand({
                   onSelect={() => onValueChange(category.id)}
                 >
                   <CategoryLabel category={category} />
+                  {category.id === selectedId && (
+                    <Check className="ml-auto h-4 w-4 text-primary" />
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>

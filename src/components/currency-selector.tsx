@@ -8,7 +8,11 @@ import {
   CommandInput,
   CommandItem,
 } from '@/components/ui/command'
-import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer'
+import {
+  MobilePickerSheet,
+  mobilePickerCommandClassName,
+  mobilePickerScrollClassName,
+} from '@/components/mobile-picker-sheet'
 import {
   Popover,
   PopoverContent,
@@ -16,6 +20,7 @@ import {
 } from '@/components/ui/popover'
 import { Currency } from '@/lib/currency'
 import { useMediaQuery } from '@/lib/hooks'
+import { cn } from '@/lib/utils'
 import { useTranslations } from 'next-intl'
 import { forwardRef, useEffect, useState } from 'react'
 
@@ -25,6 +30,8 @@ type Props = {
   /** Currency code to be selected by default. Overwriting this value will update current selection, too. */
   defaultValue: Currency['code']
   isLoading: boolean
+  /** Heading of the mobile picker sheet (usually the field label). */
+  title: string
 }
 
 export function CurrencySelector({
@@ -32,6 +39,7 @@ export function CurrencySelector({
   onValueChange,
   defaultValue,
   isLoading,
+  title,
 }: Props) {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState<string>(defaultValue)
@@ -72,40 +80,42 @@ export function CurrencySelector({
   }
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
+    <MobilePickerSheet
+      open={open}
+      onOpenChange={setOpen}
+      title={title}
+      trigger={
         <CurrencyButton
           currency={selectedCurrency}
           open={open}
           isLoading={isLoading}
         />
-      </DrawerTrigger>
-      <DrawerContent
-        className="p-0"
-        // Prevent auto-focusing the search input on open: on mobile that pops up
-        // the on-screen keyboard, which shifts the layout while the user is tapping
-        // and causes taps to land on the wrong item (or nothing).
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        <CurrencyCommand
-          currencies={currencies}
-          onValueChange={(id) => {
-            setValue(id)
-            onValueChange(id)
-            setOpen(false)
-          }}
-        />
-      </DrawerContent>
-    </Drawer>
+      }
+    >
+      <CurrencyCommand
+        currencies={currencies}
+        onValueChange={(id) => {
+          setValue(id)
+          onValueChange(id)
+          setOpen(false)
+        }}
+        className={mobilePickerCommandClassName}
+        scrollClassName={mobilePickerScrollClassName}
+      />
+    </MobilePickerSheet>
   )
 }
 
 function CurrencyCommand({
   currencies,
   onValueChange,
+  className,
+  scrollClassName,
 }: {
   currencies: Currency[]
   onValueChange: (currencyId: Currency['code']) => void
+  className?: string
+  scrollClassName?: string
 }) {
   const currencyGroup = (currency: Currency) => {
     switch (currency.code) {
@@ -132,10 +142,12 @@ function CurrencyCommand({
   )
 
   return (
-    <Command>
+    <Command className={className}>
       <CommandInput placeholder={t('search')} className="text-base" />
       <CommandEmpty>{t('noCurrency')}</CommandEmpty>
-      <div className="w-full max-h-[300px] overflow-y-auto">
+      <div
+        className={cn('w-full max-h-[300px] overflow-y-auto', scrollClassName)}
+      >
         {Object.entries(currenciesByGroup).map(
           ([group, groupCurrencies]) => (
             <CommandGroup key={group} heading={t(`${group}.heading`)}>

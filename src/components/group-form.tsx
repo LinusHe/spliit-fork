@@ -335,6 +335,7 @@ export function GroupForm({
                       t('CurrencyCodeField.customOption'),
                     )}
                     defaultValue={form.watch(field.name) ?? ''}
+                    title={t('CurrencyCodeField.label')}
                     onValueChange={(newCurrency) => {
                       field.onChange(newCurrency)
                       const currency = getCurrency(newCurrency)

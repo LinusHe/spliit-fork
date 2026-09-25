@@ -624,6 +624,7 @@ export function ExpenseForm({
                         currencies={defaultCurrencyList(locale, '')}
                         defaultValue={form.watch(field.name) ?? ''}
                         isLoading={false}
+                        title={t(`${sExpense}.currencyField.label`)}
                         onValueChange={(v) => onChange(v)}
                       />
                     ) : (

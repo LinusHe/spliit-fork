@@ -6,6 +6,11 @@ import {
   extractExpenseInformationFromImage,
   extractExpenseWithItemsFromImage,
 } from '@/app/groups/[groupId]/expenses/create-from-receipt-button-actions'
+import {
+  MobilePickerSheet,
+  mobilePickerCommandClassName,
+  mobilePickerScrollClassName,
+} from '@/components/mobile-picker-sheet'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -42,6 +47,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { type Currency } from '@/lib/currency'
 import { useActiveUser, useMediaQuery } from '@/lib/hooks'
 import {
+  cn,
   formatCurrency,
   formatDateOnly,
   getCurrencyFromGroup,
@@ -656,6 +662,7 @@ function ItemCategoryPicker({
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const tCat = useTranslations('Categories')
   const t = useTranslations('CreateFromReceipt')
+  const tForm = useTranslations('ExpenseForm')
 
   const selectedCategory = value
     ? categories.find((c) => String(c.id) === value)
@@ -669,11 +676,13 @@ function ItemCategoryPicker({
     {},
   )
 
-  const commandContent = (
-    <Command>
+  const commandContent = (className?: string, scrollClassName?: string) => (
+    <Command className={className}>
       <CommandInput placeholder={tCat('search')} className="text-base" />
       <CommandEmpty>{tCat('noCategory')}</CommandEmpty>
-      <div className="w-full max-h-[250px] overflow-y-auto">
+      <div
+        className={cn('w-full max-h-[250px] overflow-y-auto', scrollClassName)}
+      >
         {Object.entries(categoriesByGroup).map(([group, groupCategories]) => (
           <CommandGroup key={group} heading={tCat(`${group}.heading`)}>
             {groupCategories.map((category) => (
@@ -727,25 +736,25 @@ function ItemCategoryPicker({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
         <PopoverContent className="p-0 w-[280px]" align="start">
-          {commandContent}
+          {commandContent()}
         </PopoverContent>
       </Popover>
     )
   }
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
-      <DrawerContent
-        className="p-0"
-        // Prevent auto-focusing the search input on open: on mobile that pops up
-        // the on-screen keyboard, which shifts the layout while the user is tapping
-        // and causes taps to land on the wrong item (or nothing).
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        {commandContent}
-      </DrawerContent>
-    </Drawer>
+    <MobilePickerSheet
+      open={open}
+      onOpenChange={setOpen}
+      title={tForm('categoryField.label')}
+      className="h-[85dvh]"
+      trigger={triggerButton}
+    >
+      {commandContent(
+        mobilePickerCommandClassName,
+        mobilePickerScrollClassName,
+      )}
+    </MobilePickerSheet>
   )
 }
 
