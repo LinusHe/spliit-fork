@@ -276,6 +276,12 @@ export async function updateExpense(
           },
           data: {
             shares: paidFor.shares,
+            // The form asked whether a changed, already paid share stays paid.
+            ...(expenseFormValues.unsettleParticipantIds?.includes(
+              paidFor.participant,
+            )
+              ? { settledAt: null }
+              : {}),
           },
         })),
         deleteMany: existingExpense.paidFor.filter(
@@ -322,6 +328,52 @@ export async function updateExpense(
       latitude: expenseFormValues.latitude ?? null,
       longitude: expenseFormValues.longitude ?? null,
     },
+  })
+}
+
+/**
+ * Marks participants' shares of an expense as already paid back to the payer
+ * (or open again). The payer's own share and unknown participants are
+ * ignored. Returns null if the expense no longer exists.
+ */
+export async function settleExpenseShares(
+  groupId: string,
+  expenseId: string,
+  participantIds: string[],
+  settled: boolean,
+  activeParticipantId?: string,
+  db: Prisma.TransactionClient = prisma,
+  syncVersion = randomId(),
+) {
+  const expense = await getExpense(groupId, expenseId, db)
+  if (!expense) return null
+  const ids = expense.paidFor
+    .map((p) => p.participantId)
+    .filter((id) => participantIds.includes(id) && id !== expense.paidById)
+  if (!ids.length) return expense
+  await db.expensePaidFor.updateMany({
+    where: { expenseId, participantId: { in: ids } },
+    data: { settledAt: settled ? new Date() : null },
+  })
+  const group = await getGroup(groupId, db)
+  await logActivity(
+    groupId,
+    settled ? ActivityType.SETTLE_EXPENSE : ActivityType.UNSETTLE_EXPENSE,
+    {
+      participantId: activeParticipantId,
+      expenseId,
+      data: JSON.stringify({
+        title: expense.title,
+        names: ids.map(
+          (id) => group?.participants.find((p) => p.id === id)?.name ?? '',
+        ),
+      }),
+    },
+    db,
+  )
+  return db.expense.update({
+    where: { id: expenseId, groupId },
+    data: { syncVersion },
   })
 }
 
@@ -507,6 +559,7 @@ export async function getGroupExpenses(
         select: {
           participant: { select: { id: true, name: true } },
           shares: true,
+          settledAt: true,
         },
       },
       splitMode: true,

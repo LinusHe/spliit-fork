@@ -13,6 +13,13 @@ import {
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -49,7 +56,7 @@ import {
   SplittingOptions,
   expenseFormSchema,
 } from '@/lib/schemas'
-import { distributeAmount } from '@/lib/shares'
+import { distributeAmount, getExpenseShares } from '@/lib/shares'
 import { calculateShare } from '@/lib/totals'
 import {
   amountAsDecimal,
@@ -65,6 +72,7 @@ import { RecurrenceRule } from '@prisma/client'
 import { CalendarIcon, ChevronRight, Copy, Save } from 'lucide-react'
 import { v4 as uuid } from 'uuid'
 import { parseDuplicatedSplit } from './duplicate-expense'
+import { SettleShares, SettledHint } from './settle-shares'
 import { SplitDifference } from './split-difference'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -193,6 +201,7 @@ export function ExpenseForm({
   runtimeFeatureFlags: RuntimeFeatureFlags
 }) {
   const t = useTranslations('ExpenseForm')
+  const tSettle = useTranslations('ExpenseForm.Settle')
   const offline = useOfflineStatus()
   // Keep the version the form was OPENED with, not a background-refetched version.
   const baseVersion = useRef(expense?.syncVersion)
@@ -329,6 +338,59 @@ export function ExpenseForm({
   })
   const [isCategoryLoading, setCategoryLoading] = useState(false)
   const activeUserId = useActiveUser(group.id)
+  const [settleQuestion, setSettleQuestion] = useState<{
+    names: string[]
+    resolve: (keep: boolean | null) => void
+  } | null>(null)
+
+  /** Participants to reopen, [] to keep everything, null to cancel saving. */
+  const askAboutSettledShares = async (
+    values: ExpenseFormValues,
+  ): Promise<string[] | null> => {
+    if (!expense) return []
+    const settled = expense.paidFor.filter(
+      (p) => p.settledAt && p.participantId !== expense.paidById,
+    )
+    if (!settled.length) return []
+    const before = getExpenseShares({
+      id: expense.id,
+      amount: expense.amount,
+      splitMode: expense.splitMode,
+      paidFor: expense.paidFor,
+    })
+    const after = getExpenseShares({
+      id: expense.id,
+      amount: values.amount,
+      splitMode: values.splitMode,
+      paidFor: values.paidFor.map((p) => ({
+        participantId: p.participant,
+        shares: Number(p.shares),
+      })),
+    })
+    // Paid back to somebody else now: every mark is in question.
+    const payerChanged = values.paidBy !== expense.paidById
+    const changed = settled
+      .filter(
+        (p) =>
+          after.has(p.participantId) &&
+          p.participantId !== values.paidBy &&
+          (payerChanged ||
+            after.get(p.participantId) !== before.get(p.participantId)),
+      )
+      .map((p) => p.participantId)
+    if (!changed.length) return []
+    const keep = await new Promise<boolean | null>((resolve) =>
+      setSettleQuestion({
+        names: changed.map(
+          (id) => group.participants.find((p) => p.id === id)?.name ?? '',
+        ),
+        resolve,
+      }),
+    )
+    setSettleQuestion(null)
+    if (keep === null) return null
+    return keep ? [] : changed
+  }
 
   const submit = async (values: ExpenseFormValues) => {
     await persistDefaultSplittingOptions(group.id, values)
@@ -355,6 +417,11 @@ export function ExpenseForm({
         originalCurrency,
       )
     }
+    // A share marked as already paid back that changes: ask whether it stays
+    // paid (it might have been paid in the old amount).
+    const reopen = await askAboutSettledShares(values)
+    if (reopen === null) return
+    if (reopen.length) values.unsettleParticipantIds = reopen
     try {
       setSaveError(null)
       await onSubmit(
@@ -528,6 +595,56 @@ export function ExpenseForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(submit)}>
         {saveError && <p role="alert" className="mb-4 rounded-md border border-destructive p-3 text-sm text-destructive">{saveError}</p>}
+        {expense && (
+          <SettleShares
+            expense={expense}
+            participants={group.participants}
+            currency={groupCurrency}
+            onSettled={(previous, version) => {
+              // Follow our own mark; a foreign change keeps the old base so
+              // saving still reports the conflict.
+              if (version && baseVersion.current === previous)
+                baseVersion.current = version
+            }}
+          />
+        )}
+        <SettledHint
+          groupId={group.id}
+          enabled={form.watch('isReimbursement')}
+          from={form.watch('paidBy')}
+          to={form.watch('paidFor')?.[0]?.participant}
+          participants={group.participants}
+          currency={groupCurrency}
+        />
+        <Dialog
+          open={!!settleQuestion}
+          onOpenChange={(open) => {
+            if (!open) settleQuestion?.resolve(null)
+          }}
+        >
+          <DialogContent className="z-[200] sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{tSettle('changedTitle')}</DialogTitle>
+              <DialogDescription>
+                {tSettle('changedDescription', {
+                  names: settleQuestion?.names.join(', ') ?? '',
+                })}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-2 sm:flex-row-reverse">
+              <Button type="button" onClick={() => settleQuestion?.resolve(true)}>
+                {tSettle('keep')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => settleQuestion?.resolve(false)}
+              >
+                {tSettle('reopen')}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
         {offline.offline && <p className="mb-4 text-xs text-muted-foreground">Wird auf diesem Gerät gespeichert und später synchronisiert. Beleg-Upload, KI und Ortssuche benötigen Internet.</p>}
         <Card>
           <CardHeader>
@@ -1109,6 +1226,7 @@ export function ExpenseForm({
                                                   : shares,
                                               expenseId: '',
                                               participantId: '',
+                                              settledAt: null,
                                             }),
                                           ),
                                           splitMode: form.watch('splitMode'),

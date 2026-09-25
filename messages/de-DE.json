@@ -57,7 +57,9 @@
     "receivedBy": "Empfangen von <strong>{paidBy}</strong> für <paidFor></paidFor>",
     "yourBalance": "Deine Bilanz:",
     "everyone": "jeder",
-    "notInvolved": "Du bist nicht involviert"
+    "notInvolved": "Du bist nicht involviert",
+    "settled": "Zurückgezahlt",
+    "partlySettled": "{count} von {total} zurückgezahlt"
   },
   "Groups": {
     "myGroups": "Meine Gruppen",
@@ -327,6 +329,21 @@
       "sum": "Aufgeteilt: {sum} von {total}",
       "distributeMissing": "{amount} gleichmäßig aufteilen",
       "distributeSurplus": "{amount} gleichmäßig abziehen"
+    },
+    "Settle": {
+      "title": "Schon zurückgezahlt?",
+      "allSettled": "Alle haben zurückgezahlt",
+      "description": "Markiere, wer seinen Anteil an {payer} bereits direkt bezahlt hat, z. B. bar.",
+      "paid": "zurückgezahlt",
+      "toggle": "{name} hat zurückgezahlt",
+      "settleAll": "Alle als zurückgezahlt markieren",
+      "changedTitle": "Bereits zurückgezahlte Anteile ändern sich",
+      "changedDescription": "Der Anteil von {names} ändert sich durch deine Bearbeitung. Soll er weiterhin als zurückgezahlt gelten?",
+      "keep": "Weiterhin als zurückgezahlt",
+      "reopen": "Wieder als offen markieren"
+    },
+    "SettledHint": {
+      "text": "{from} hat {to} bereits {amount} direkt bei einzelnen Ausgaben zurückgezahlt. Das ist in den Salden schon berücksichtigt – erfasse hier nur, was noch offen ist."
     }
   },
   "ExpenseDocumentsInput": {
@@ -396,6 +413,12 @@
       "noImbursements": "Es sieht aus, als seien in der Gruppe keine Rückzahlungen nötig 😁",
       "owes": "<strong>{from}</strong> schuldet <strong>{to}</strong>",
       "markAsPaid": "Als gezahlt markieren"
+    },
+    "Settlements": {
+      "title": "Bereits direkt zurückgezahlt",
+      "description": "Bei einzelnen Ausgaben als zurückgezahlt markiert. Ist in den Salden oben schon berücksichtigt.",
+      "row": "{from} → {to}",
+      "expenses": "{count, plural, one {# Ausgabe} other {# Ausgaben}}"
     }
   },
   "Stats": {
@@ -447,7 +470,9 @@
       "earlierThisYear": "Dieses Jahr",
       "lastYear": "Letztes Jahr",
       "older": "Älter"
-    }
+    },
+    "expenseSettled": "<strong>{participant}</strong> hat den Anteil von {names} bei <em>{expense}</em> als zurückgezahlt markiert.",
+    "expenseUnsettled": "<strong>{participant}</strong> hat den Anteil von {names} bei <em>{expense}</em> wieder als offen markiert."
   },
   "Information": {
     "title": "Informationen",

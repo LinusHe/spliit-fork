@@ -6,7 +6,13 @@ import { Button } from '@/components/ui/button'
 import { getGroupExpenses } from '@/lib/api'
 import { Currency } from '@/lib/currency'
 import { cn, formatCurrency, formatDateOnly } from '@/lib/utils'
-import { ArrowLeftRight, ChevronRight, CloudOff, MapPin } from 'lucide-react'
+import {
+  ArrowLeftRight,
+  Check,
+  ChevronRight,
+  CloudOff,
+  MapPin,
+} from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Fragment } from 'react'
 import { useExpenseDrawerOptional } from './expense-drawer-context'
@@ -41,6 +47,34 @@ function Participants({
     forCount: expense.paidFor.length,
   })
   return <>{participants}</>
+}
+
+/** "Paid back" / "1 of 2 paid back" for shares settled directly. */
+function SettledBadge({ expense }: { expense: Expense }) {
+  const t = useTranslations('ExpenseCard')
+  if (expense.isReimbursement) return null
+  const debtors = expense.paidFor.filter(
+    (p) => p.participant.id !== expense.paidBy.id,
+  )
+  const settled = debtors.filter((p) => p.settledAt).length
+  if (!settled) return null
+  const all = settled === debtors.length
+  return (
+    <span
+      data-testid="settled-badge"
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+        all
+          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200'
+          : 'bg-muted text-muted-foreground',
+      )}
+    >
+      <Check className="h-3 w-3" />
+      {all
+        ? t('settled')
+        : t('partlySettled', { count: settled, total: debtors.length })}
+    </span>
+  )
 }
 
 type Props = {
@@ -93,10 +127,11 @@ export function ExpenseCard({
         />
       )}
       <div className="flex-1">
-        <div className="mb-1 flex items-center gap-2">
+        <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className={cn(expense.isReimbursement && 'italic')}>
             {expense.title}
           </span>
+          <SettledBadge expense={expense} />
           {pending && (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900 dark:bg-amber-500/20 dark:text-amber-200">
               <CloudOff className="h-3 w-3" />

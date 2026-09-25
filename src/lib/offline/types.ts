@@ -14,12 +14,19 @@ export type Snapshot = {
 
 export const mutationSchema = z.object({
   id: z.string().uuid(),
-  kind: z.enum(['create', 'update', 'delete']),
+  kind: z.enum(['create', 'update', 'delete', 'settle']),
   groupId: z.string().min(1).max(100),
   expenseId: z.string().min(1).max(100),
   baseVersion: z.string().max(100).nullable(),
   groupCurrency: z.string().max(100),
   values: expenseFormSchema.optional(),
+  // kind "settle": shares marked as already paid back (or open again).
+  settle: z
+    .object({
+      participantIds: z.array(z.string().min(1).max(100)).min(1).max(100),
+      settled: z.boolean(),
+    })
+    .optional(),
   participantId: z.string().max(100).optional(),
   localTime: z.number(),
 })

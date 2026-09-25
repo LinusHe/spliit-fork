@@ -233,6 +233,10 @@ export async function enqueue(path: string, input: Record<string, any>) {
     baseVersion: input.baseVersion ?? current?.syncVersion ?? null,
     groupCurrency: currencyIdentity(snapshot.group),
     values: input.expenseFormValues,
+    settle:
+      kind === 'settle'
+        ? { participantIds: input.participantIds, settled: input.settled }
+        : undefined,
     participantId: input.participantId,
     localTime: Date.now(),
   })
@@ -242,12 +246,21 @@ export async function enqueue(path: string, input: Record<string, any>) {
   status({ pending: (await readData()).queue.length, error: null })
   void navigator.storage?.persist?.().catch(() => false)
   void sync()
+  if (kind === 'settle')
+    // The expense's new version, so an open edit form can follow its own mark.
+    return { baseVersion: mutation.baseVersion, version: mutation.id }
   return kind === 'delete' ? {} : { expenseId }
 }
 
 let running: Promise<void> | undefined
+// A change saved while a run is past its queue loop (e.g. refreshing the
+// snapshot) would otherwise wait for the 30 s timer: run once more instead.
+let rerun = false
 export async function sync() {
-  if (running) return running
+  if (running) {
+    rerun = true
+    return running
+  }
   const run = async () => {
     status({ pending: (await readData()).queue.length })
     if (!navigator.onLine) {
@@ -309,6 +322,10 @@ export async function sync() {
     .catch(reportStorageError)
     .finally(() => {
       running = undefined
+      if (rerun) {
+        rerun = false
+        void sync()
+      }
     })
   return running
 }

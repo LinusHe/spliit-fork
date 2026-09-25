@@ -13,7 +13,7 @@ export const offlineLink: TRPCLink<AppRouter> =
         if (typeof window !== 'undefined' && !op.path.startsWith('offline.')) {
           if (
             op.type === 'mutation' &&
-            /^groups\.expenses\.(create|update|delete)$/.test(op.path)
+            /^groups\.expenses\.(create|update|delete|settle)$/.test(op.path)
           ) {
             const data = await enqueue(
               op.path,

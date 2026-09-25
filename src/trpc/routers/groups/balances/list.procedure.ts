@@ -1,6 +1,7 @@
 import { getGroupExpenses } from '@/lib/api'
 import {
   getBalances,
+  getDirectSettlements,
   getPublicBalances,
   getSuggestedReimbursements,
 } from '@/lib/balances'
@@ -15,5 +16,10 @@ export const listGroupBalancesProcedure = baseProcedure
     const reimbursements = getSuggestedReimbursements(balances)
     const publicBalances = getPublicBalances(reimbursements)
 
-    return { balances: publicBalances, reimbursements }
+    return {
+      balances: publicBalances,
+      reimbursements,
+      // Shares already paid back directly; already part of the balances.
+      settlements: getDirectSettlements(expenses),
+    }
   })

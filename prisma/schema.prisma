@@ -142,6 +142,9 @@ model ExpensePaidFor {
   expenseId     String
   participantId String
   shares        Int         @default(1)
+  /// Set when this participant already paid their share back to the payer
+  /// directly (e.g. in cash during a trip); counts like a reimbursement.
+  settledAt     DateTime?
 
   @@id([expenseId, participantId])
 }
@@ -162,6 +165,8 @@ enum ActivityType {
   CREATE_EXPENSE
   UPDATE_EXPENSE
   DELETE_EXPENSE
+  SETTLE_EXPENSE
+  UNSETTLE_EXPENSE
 }
 
 // Durable receipts make retries safe even after an expense has been deleted.

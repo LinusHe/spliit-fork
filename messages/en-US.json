@@ -57,7 +57,9 @@
     "everyone": "everyone",
     "receivedBy": "Received by <strong>{paidBy}</strong> for <paidFor></paidFor>",
     "yourBalance": "Your balance:",
-    "notInvolved": "You are not involved"
+    "notInvolved": "You are not involved",
+    "settled": "Paid back",
+    "partlySettled": "{count} of {total} paid back"
   },
   "Groups": {
     "myGroups": "My groups",
@@ -319,6 +321,21 @@
       "sum": "Split so far: {sum} of {total}",
       "distributeMissing": "Split {amount} evenly",
       "distributeSurplus": "Take {amount} off evenly"
+    },
+    "Settle": {
+      "title": "Already paid back?",
+      "allSettled": "Everyone paid back",
+      "description": "Mark who already paid their share back to {payer} directly, e.g. in cash.",
+      "paid": "paid back",
+      "toggle": "{name} paid back",
+      "settleAll": "Mark everyone as paid back",
+      "changedTitle": "Paid-back shares change",
+      "changedDescription": "The share of {names} changes with your edit. Should it still count as paid back?",
+      "keep": "Keep as paid back",
+      "reopen": "Mark as open again"
+    },
+    "SettledHint": {
+      "text": "{from} already paid {to} {amount} back directly in single expenses. That is already included in the balances — only record what is still open."
     }
   },
   "ExpenseDocumentsInput": {
@@ -388,6 +405,12 @@
       "noImbursements": "It looks like your group doesn’t need any reimbursement 😁",
       "owes": "<strong>{from}</strong> owes <strong>{to}</strong>",
       "markAsPaid": "Mark as paid"
+    },
+    "Settlements": {
+      "title": "Already paid back directly",
+      "description": "Shares marked as paid back in single expenses. Already included in the balances above.",
+      "row": "{from} → {to}",
+      "expenses": "{count, plural, one {# expense} other {# expenses}}"
     }
   },
   "Stats": {
@@ -439,7 +462,9 @@
       "earlierThisYear": "Earlier this year",
       "lastYear": "Last year",
       "older": "Older"
-    }
+    },
+    "expenseSettled": "<strong>{participant}</strong> marked the share of {names} in <em>{expense}</em> as paid back.",
+    "expenseUnsettled": "<strong>{participant}</strong> marked the share of {names} in <em>{expense}</em> as open again."
   },
   "Information": {
     "title": "Information",

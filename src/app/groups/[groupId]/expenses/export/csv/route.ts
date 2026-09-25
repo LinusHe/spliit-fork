@@ -57,7 +57,9 @@ export async function GET(
           originalCurrency: true,
           conversionRate: true,
           paidById: true,
-          paidFor: { select: { participantId: true, shares: true } },
+          paidFor: {
+            select: { participantId: true, shares: true, settledAt: true },
+          },
           isReimbursement: true,
           splitMode: true,
         },
@@ -107,6 +109,8 @@ export async function GET(
     { label: 'Conversion rate', value: 'conversionRate' },
     { label: 'Is Reimbursement', value: 'isReimbursement' },
     { label: 'Split mode', value: 'splitMode' },
+    // Shares marked as already paid back to the payer directly.
+    { label: 'Paid back directly by', value: 'settledBy' },
     ...group.participants.map((participant) => ({
       label: escapeCsvFormula(participant.name),
       value: participant.name,
@@ -136,6 +140,16 @@ export async function GET(
         : null,
       isReimbursement: expense.isReimbursement ? 'Yes' : 'No',
       splitMode: splitModeLabel[expense.splitMode],
+      settledBy: escapeCsvFormula(
+        expense.paidFor
+          .filter((p) => p.settledAt && p.participantId !== expense.paidById)
+          .map(
+            (p) =>
+              group.participants.find(({ id }) => id === p.participantId)
+                ?.name ?? '',
+          )
+          .join(', '),
+      ),
       ...Object.fromEntries(
         group.participants.map((participant) => {
           const isPaidByParticipant = expense.paidById === participant.id

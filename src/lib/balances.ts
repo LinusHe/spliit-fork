@@ -13,6 +13,66 @@ export type Reimbursement = {
   amount: number
 }
 
+type BalanceExpense = NonNullable<
+  Awaited<ReturnType<typeof getGroupExpenses>>
+>[number]
+
+/** Shares of an expense marked as already paid back to its payer. */
+function settledShares(
+  expense: BalanceExpense,
+  dividedAmounts: Map<string, number>,
+) {
+  if (expense.isReimbursement) return []
+  return expense.paidFor.flatMap(({ participant, settledAt }) =>
+    settledAt && participant.id !== expense.paidBy.id
+      ? [
+          {
+            participantId: participant.id,
+            amount: dividedAmounts.get(participant.id) ?? 0,
+          },
+        ]
+      : [],
+  )
+}
+
+/**
+ * Money already paid back directly per expense ("marked as paid"), summed per
+ * pair. Shown on the balances tab and next to manual reimbursements so nobody
+ * settles the same amount twice.
+ */
+export function getDirectSettlements(
+  expenses: NonNullable<Awaited<ReturnType<typeof getGroupExpenses>>>,
+): (Reimbursement & { expenses: number })[] {
+  const pairs = new Map<string, Reimbursement & { expenses: number }>()
+  for (const expense of expenses) {
+    const shares = settledShares(
+      expense,
+      getExpenseShares({
+        id: expense.id,
+        amount: expense.amount,
+        splitMode: expense.splitMode,
+        paidFor: expense.paidFor.map(({ participant, shares }) => ({
+          participantId: participant.id,
+          shares,
+        })),
+      }),
+    )
+    for (const { participantId, amount } of shares) {
+      const key = `${participantId}>${expense.paidBy.id}`
+      const pair = pairs.get(key) ?? {
+        from: participantId,
+        to: expense.paidBy.id,
+        amount: 0,
+        expenses: 0,
+      }
+      pair.amount += amount
+      pair.expenses += 1
+      pairs.set(key, pair)
+    }
+  }
+  return Array.from(pairs.values()).filter((p) => p.amount !== 0)
+}
+
 export function getBalances(
   expenses: NonNullable<Awaited<ReturnType<typeof getGroupExpenses>>>,
 ): Balances {
@@ -40,6 +100,16 @@ export function getBalances(
 
       balances[participantId].paidFor += dividedAmount
     })
+
+    // A share already paid back directly counts exactly like a reimbursement
+    // of that share from the participant to the payer.
+    for (const { participantId, amount } of settledShares(
+      expense,
+      dividedAmounts,
+    )) {
+      balances[participantId].paid += amount
+      balances[paidBy].paidFor += amount
+    }
   }
 
   // Every share is apportioned as a whole minor unit, so the rounding below is

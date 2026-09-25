@@ -1,5 +1,6 @@
 import {
   getBalances,
+  getDirectSettlements,
   getPublicBalances,
   getSuggestedReimbursements,
 } from '@/lib/balances'
@@ -21,6 +22,29 @@ export function project(
     (m) => m.groupId === snapshot.group.id,
   )) {
     const old = expenses.find((e) => e.id === mutation.expenseId)
+    if (mutation.kind === 'settle') {
+      // Only settledAt changes; an expense deleted meanwhile stays deleted.
+      if (!old || !mutation.settle) continue
+      const { participantIds, settled } = mutation.settle
+      expenses = expenses.map((e) =>
+        e.id !== old.id
+          ? e
+          : {
+              ...old,
+              syncVersion: mutation.id,
+              paidFor: old.paidFor.map((p) =>
+                participantIds.includes(p.participantId) &&
+                p.participantId !== old.paidById
+                  ? {
+                      ...p,
+                      settledAt: settled ? new Date(mutation.localTime) : null,
+                    }
+                  : p,
+              ),
+            },
+      )
+      continue
+    }
     expenses = expenses.filter((e) => e.id !== mutation.expenseId)
     if (mutation.kind === 'delete' || !mutation.values) continue
     const v = mutation.values
@@ -42,6 +66,11 @@ export function project(
         expenseId: mutation.expenseId,
         participantId: p.participant,
         shares: Number(p.shares),
+        // Editing keeps "already paid back" unless the form asked to reopen.
+        settledAt: v.unsettleParticipantIds?.includes(p.participant)
+          ? null
+          : old?.paidFor.find((o) => o.participantId === p.participant)
+              ?.settledAt ?? null,
       })),
       splitMode: v.splitMode,
       isReimbursement: v.isReimbursement,
@@ -162,7 +191,11 @@ export function localQuery(
     }
     case 'groups.balances.list': {
       const reimbursements = getSuggestedReimbursements(getBalances(expenses))
-      return { balances: getPublicBalances(reimbursements), reimbursements }
+      return {
+        balances: getPublicBalances(reimbursements),
+        reimbursements,
+        settlements: getDirectSettlements(expenses),
+      }
     }
     case 'groups.stats.get':
       return {

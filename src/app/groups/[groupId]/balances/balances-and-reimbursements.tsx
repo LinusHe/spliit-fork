@@ -10,9 +10,9 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { getCurrencyFromGroup } from '@/lib/utils'
+import { formatCurrency, getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useEffect } from 'react'
 import { useCurrentGroup } from '../current-group-context'
 
@@ -24,6 +24,7 @@ export default function BalancesAndReimbursements() {
       groupId,
     })
   const t = useTranslations('Balances')
+  const locale = useLocale()
 
   useEffect(() => {
     // Until we use tRPC more widely and can invalidate the cache on expense
@@ -71,6 +72,47 @@ export default function BalancesAndReimbursements() {
           )}
         </CardContent>
       </Card>
+      {!isLoading && balancesData.settlements?.length ? (
+        <Card data-testid="direct-settlements">
+          <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
+            <CardTitle className="text-base">
+              {t('Settlements.title')}
+            </CardTitle>
+            <CardDescription>{t('Settlements.description')}</CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <ul className="divide-y text-sm">
+              {balancesData.settlements.map((s) => {
+                const name = (id: string) =>
+                  group.participants.find((p) => p.id === id)?.name ?? '–'
+                return (
+                  <li
+                    key={`${s.from}>${s.to}`}
+                    className="flex items-center justify-between gap-3 py-2"
+                  >
+                    <span>
+                      {t('Settlements.row', {
+                        from: name(s.from),
+                        to: name(s.to),
+                      })}{' '}
+                      <span className="text-muted-foreground">
+                        · {t('Settlements.expenses', { count: s.expenses })}
+                      </span>
+                    </span>
+                    <span className="tabular-nums font-medium">
+                      {formatCurrency(
+                        getCurrencyFromGroup(group),
+                        s.amount,
+                        locale,
+                      )}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
     </>
   )
 }

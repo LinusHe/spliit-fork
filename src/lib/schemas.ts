@@ -146,6 +146,8 @@ export const expenseFormSchema = z
         Object.values(RecurrenceRule) as any,
       )
       .default('NONE'),
+    // Participants whose already paid share changed and should be open again.
+    unsettleParticipantIds: z.array(z.string().max(100)).max(100).optional(),
   })
   .superRefine((expense, ctx) => {
     switch (expense.splitMode) {

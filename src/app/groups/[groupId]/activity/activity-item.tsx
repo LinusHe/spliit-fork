@@ -40,6 +40,31 @@ function useSummary(activity: Activity, participantName?: string) {
     return <>{tr('expenseUpdated')}</>
   } else if (activity.activityType == ActivityType.DELETE_EXPENSE) {
     return <>{tr('expenseDeleted')}</>
+  } else if (
+    activity.activityType == ActivityType.SETTLE_EXPENSE ||
+    activity.activityType == ActivityType.UNSETTLE_EXPENSE
+  ) {
+    // data: {"title": expense title, "names": participants} (see api.ts)
+    let settle = { title: '', names: [] as string[] }
+    try {
+      settle = JSON.parse(activity.data ?? '') as typeof settle
+    } catch {}
+    return (
+      <>
+        {t.rich(
+          activity.activityType == ActivityType.SETTLE_EXPENSE
+            ? 'expenseSettled'
+            : 'expenseUnsettled',
+          {
+            expense: settle.title,
+            names: settle.names.join(', '),
+            participant,
+            em: (chunks) => <em>&ldquo;{chunks}&rdquo;</em>,
+            strong: (chunks) => <strong>{chunks}</strong>,
+          },
+        )}
+      </>
+    )
   }
 }
 

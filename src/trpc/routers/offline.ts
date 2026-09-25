@@ -3,6 +3,7 @@ import {
   deleteExpense,
   getExpense,
   getGroup,
+  settleExpenseShares,
   updateExpense,
 } from '@/lib/api'
 import {
@@ -109,6 +110,30 @@ export const offlineRouter = createTRPCRouter({
                 input.expenseId,
                 tx,
               )
+              if (input.kind === 'settle') {
+                // Marking a share as paid does not conflict with edits made
+                // online meanwhile: it only touches settledAt, which updates
+                // preserve. An expense deleted online makes it a no-op.
+                if (current && input.settle)
+                  await settleExpenseShares(
+                    input.groupId,
+                    input.expenseId,
+                    input.settle.participantIds,
+                    input.settle.settled,
+                    input.participantId,
+                    tx,
+                    // Only continue the local version chain if nobody changed
+                    // the expense online; otherwise later queued edits must
+                    // still see the conflict.
+                    current.syncVersion === input.baseVersion
+                      ? input.id
+                      : undefined,
+                  )
+                await tx.offlineMutation.create({
+                  data: { id: input.id, groupId: input.groupId, requestHash },
+                })
+                return { status: 'applied' as const, fresh: !!current }
+              }
               if ((current?.syncVersion ?? null) !== input.baseVersion) {
                 return { status: 'conflict' as const, current }
               }
@@ -180,10 +205,14 @@ export const offlineRouter = createTRPCRouter({
                 body:
                   input.kind === 'delete'
                     ? 'Eine Ausgabe wurde gelöscht.'
+                    : input.kind === 'settle'
+                    ? input.settle?.settled
+                      ? 'Eine Rückzahlung wurde als erledigt markiert.'
+                      : 'Eine Rückzahlung wurde wieder als offen markiert.'
                     : `Ausgabe gespeichert: ${input.values?.title ?? ''}`,
                 url: `/groups/${input.groupId}`,
               },
-              input.kind,
+              input.kind === 'settle' ? 'update' : input.kind,
             ).catch(() => {})
           }
           return result.status === 'conflict' ? result : { status: 'applied' }
