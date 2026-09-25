@@ -221,7 +221,14 @@ export function ExpenseForm({
           expenseDate: expense.expenseDate ?? new Date(),
           amount: amountAsDecimal(expense.amount, groupCurrency),
           originalCurrency: expense.originalCurrency ?? group.currencyCode,
-          originalAmount: expense.originalAmount ?? undefined,
+          // Stored in minor units of the original currency, like `amount`.
+          originalAmount:
+            expense.originalAmount != null
+              ? amountAsDecimal(
+                  expense.originalAmount,
+                  getCurrency(expense.originalCurrency, locale, 'Custom'),
+                )
+              : undefined,
           conversionRate: expense.conversionRate?.toNumber(),
           category: expense.categoryId,
           paidBy: expense.paidById,
@@ -327,6 +334,13 @@ export function ExpenseForm({
     if (!conversionRequired) {
       delete values.originalAmount
       delete values.originalCurrency
+    } else if (values.originalAmount !== undefined) {
+      // originalAmount is an Int column: store minor units (12.50 $ -> 1250),
+      // otherwise the cents were silently dropped.
+      values.originalAmount = amountAsMinorUnits(
+        values.originalAmount,
+        originalCurrency,
+      )
     }
     try {
       setSaveError(null)

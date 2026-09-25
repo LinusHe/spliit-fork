@@ -13,6 +13,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { getCurrency } from '@/lib/currency'
 import {
   getServerSyncState,
   getSyncState,
@@ -143,6 +144,9 @@ export function OfflineStatus() {
       : snapshot
       ? formatCurrency(getCurrencyFromGroup(snapshot.group), n, 'de-DE')
       : String(n)
+  // Original amounts are stored in minor units of their own currency.
+  const original = (n?: number | null, code?: string | null) =>
+    n == null ? '–' : formatCurrency(getCurrency(code), n, 'de-DE')
   const rows = conflict
     ? [
         ['Titel', current?.title, local?.title],
@@ -189,11 +193,11 @@ export function OfflineStatus() {
         [
           'Originalbetrag / Kurs',
           current &&
-            `${current.originalAmount ?? ''} ${
-              current.originalCurrency ?? ''
-            } / ${current.conversionRate ?? ''}`,
+            `${original(current.originalAmount, current.originalCurrency)} / ${
+              current.conversionRate ?? ''
+            }`,
           local &&
-            `${local.originalAmount ?? ''} ${local.originalCurrency ?? ''} / ${
+            `${original(local.originalAmount, local.originalCurrency)} / ${
               local.conversionRate ?? ''
             }`,
         ],

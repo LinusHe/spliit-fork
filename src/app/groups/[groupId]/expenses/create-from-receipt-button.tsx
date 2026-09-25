@@ -19,6 +19,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from '@/components/ui/command'
 import {
   Dialog,
@@ -679,10 +680,8 @@ function ItemCategoryPicker({
   const commandContent = (className?: string, scrollClassName?: string) => (
     <Command className={className}>
       <CommandInput placeholder={tCat('search')} className="text-base" />
-      <CommandEmpty>{tCat('noCategory')}</CommandEmpty>
-      <div
-        className={cn('w-full max-h-[250px] overflow-y-auto', scrollClassName)}
-      >
+      <CommandList className={cn('w-full max-h-[250px]', scrollClassName)}>
+        <CommandEmpty>{tCat('noCategory')}</CommandEmpty>
         {Object.entries(categoriesByGroup).map(([group, groupCategories]) => (
           <CommandGroup key={group} heading={tCat(`${group}.heading`)}>
             {groupCategories.map((category) => (
@@ -704,7 +703,7 @@ function ItemCategoryPicker({
             ))}
           </CommandGroup>
         ))}
-      </div>
+      </CommandList>
     </Command>
   )
 

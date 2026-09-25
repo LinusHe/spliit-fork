@@ -1,6 +1,17 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test'
+import { Prisma } from '@prisma/client'
 import { randomUUID } from 'node:crypto'
 import superjson from 'superjson'
+
+// Same Decimal transport as the app's tRPC client (conversionRate).
+superjson.registerCustom<Prisma.Decimal, string>(
+  {
+    isApplicable: (v): v is Prisma.Decimal => Prisma.Decimal.isDecimal(v),
+    serialize: (v) => v.toJSON(),
+    deserialize: (v) => new Prisma.Decimal(v),
+  },
+  'decimal.js',
+)
 
 export async function api(
   request: APIRequestContext,

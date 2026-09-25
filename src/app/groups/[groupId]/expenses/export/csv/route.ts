@@ -152,12 +152,18 @@ export async function GET(
 
   const date = new Date().toISOString().split('T')[0]
   const filename = `Spliit Export - ${group.name} - ${date}.csv`
+  // content-disposition's default fallback keeps Latin-1 characters like
+  // "ü" as raw bytes, which arrive garbled ("DÃ¼sseldorf"). Use an ASCII
+  // fallback and the UTF-8 encoded filename* for the real name (upstream #377).
+  const asciiFilename = filename.replace(/[^\x20-\x7E]/g, '_')
 
   // \uFEFF character is added at the beginning of the CSV content to ensure that it is interpreted as UTF-8 with BOM (Byte Order Mark), which helps some applications correctly interpret the encoding.
   return new NextResponse(`\uFEFF${csv}`, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': contentDisposition(filename),
+      'Content-Disposition': contentDisposition(filename, {
+        fallback: asciiFilename,
+      }),
     },
   })
 }

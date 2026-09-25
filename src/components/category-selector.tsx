@@ -8,6 +8,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from '@/components/ui/command'
 import {
   MobilePickerSheet,
@@ -132,13 +133,10 @@ function CategoryCommand({
   return (
     <Command className={className}>
       <CommandInput placeholder={t('search')} className="text-base" />
-      <CommandEmpty>{t('noCategory')}</CommandEmpty>
-      <div
-        className={cn(
-          'w-full max-h-[300px] overflow-y-auto',
-          scrollClassName,
-        )}
+      <CommandList
+        className={cn('w-full', scrollClassName)}
       >
+        <CommandEmpty>{t('noCategory')}</CommandEmpty>
         {Object.entries(categoriesByGroup).map(
           ([group, groupCategories]) => (
             <CommandGroup key={group} heading={t(`${group}.heading`)}>
@@ -159,7 +157,7 @@ function CategoryCommand({
             </CommandGroup>
           ),
         )}
-      </div>
+      </CommandList>
     </Command>
   )
 }

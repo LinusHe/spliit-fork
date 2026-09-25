@@ -10,6 +10,7 @@ import {
   type ExpenseFilters,
 } from './expense-filters'
 import { useExpenseDrawerOptional } from './expense-drawer-context'
+import { getWeekStartsOn, isSameWeek } from '@/lib/date-groups'
 import { getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
 import dayjs, { type Dayjs } from 'dayjs'
@@ -39,10 +40,10 @@ const EXPENSE_GROUPS = {
   OLDER: 'older',
 }
 
-function getExpenseGroup(date: Dayjs, today: Dayjs) {
+function getExpenseGroup(date: Dayjs, today: Dayjs, weekStartsOn: number) {
   if (today.isBefore(date)) {
     return EXPENSE_GROUPS.UPCOMING
-  } else if (today.isSame(date, 'week')) {
+  } else if (isSameWeek(today, date, weekStartsOn)) {
     return EXPENSE_GROUPS.THIS_WEEK
   } else if (today.isSame(date, 'month')) {
     return EXPENSE_GROUPS.EARLIER_THIS_MONTH
@@ -57,10 +58,17 @@ function getExpenseGroup(date: Dayjs, today: Dayjs) {
   }
 }
 
-function getGroupedExpensesByDate(expenses: ExpensesType) {
+function getGroupedExpensesByDate(
+  expenses: ExpensesType,
+  weekStartsOn: number,
+) {
   const today = dayjs()
   return expenses.reduce((result: { [key: string]: ExpensesType }, expense) => {
-    const expenseGroup = getExpenseGroup(dayjs(toCalendarDate(expense.expenseDate)), today)
+    const expenseGroup = getExpenseGroup(
+      dayjs(toCalendarDate(expense.expenseDate)),
+      today,
+      weekStartsOn,
+    )
     result[expenseGroup] = result[expenseGroup] ?? []
     result[expenseGroup].push(expense)
     return result
@@ -218,9 +226,11 @@ const ExpenseListForSearch = ({
     if (inView && hasMore && !isLoading) fetchNextPage()
   }, [fetchNextPage, hasMore, inView, isLoading])
 
+  // Week sections start on the locale's first day (Monday for de-DE).
+  const weekStartsOn = getWeekStartsOn(locale)
   const groupedExpensesByDate = useMemo(
-    () => (expenses ? getGroupedExpensesByDate(expenses) : {}),
-    [expenses],
+    () => (expenses ? getGroupedExpensesByDate(expenses, weekStartsOn) : {}),
+    [expenses, weekStartsOn],
   )
 
   if (isLoading) return <ExpensesLoading />

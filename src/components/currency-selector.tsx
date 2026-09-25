@@ -7,6 +7,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from '@/components/ui/command'
 import {
   MobilePickerSheet,
@@ -144,10 +145,10 @@ function CurrencyCommand({
   return (
     <Command className={className}>
       <CommandInput placeholder={t('search')} className="text-base" />
-      <CommandEmpty>{t('noCurrency')}</CommandEmpty>
-      <div
-        className={cn('w-full max-h-[300px] overflow-y-auto', scrollClassName)}
+      <CommandList
+        className={cn('w-full', scrollClassName)}
       >
+        <CommandEmpty>{t('noCurrency')}</CommandEmpty>
         {Object.entries(currenciesByGroup).map(
           ([group, groupCurrencies]) => (
             <CommandGroup key={group} heading={t(`${group}.heading`)}>
@@ -163,7 +164,7 @@ function CurrencyCommand({
             </CommandGroup>
           ),
         )}
-      </div>
+      </CommandList>
     </Command>
   )
 }
