@@ -595,19 +595,6 @@ export function ExpenseForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(submit)}>
         {saveError && <p role="alert" className="mb-4 rounded-md border border-destructive p-3 text-sm text-destructive">{saveError}</p>}
-        {expense && (
-          <SettleShares
-            expense={expense}
-            participants={group.participants}
-            currency={groupCurrency}
-            onSettled={(previous, version) => {
-              // Follow our own mark; a foreign change keeps the old base so
-              // saving still reports the conflict.
-              if (version && baseVersion.current === previous)
-                baseVersion.current = version
-            }}
-          />
-        )}
         <SettledHint
           groupId={group.id}
           enabled={form.watch('isReimbursement')}
@@ -1595,6 +1582,20 @@ export function ExpenseForm({
             </Button>
           )}
         </div>
+        {/* Saved on its own, so it sits below the form's actions. */}
+        {expense && (
+          <SettleShares
+            expense={expense}
+            participants={group.participants}
+            currency={groupCurrency}
+            onSettled={(previous, version) => {
+              // Follow our own mark; a foreign change keeps the old base so
+              // saving still reports the conflict.
+              if (version && baseVersion.current === previous)
+                baseVersion.current = version
+            }}
+          />
+        )}
       </form>
     </Form>
   )

@@ -85,7 +85,7 @@ export function SettleShares({
     <div
       data-testid="settle-shares"
       className={cn(
-        'mb-4 rounded-lg border p-3',
+        'mt-6 rounded-lg border p-3',
         allSettled &&
           'border-emerald-200 bg-emerald-50 dark:border-emerald-400/30 dark:bg-emerald-950/40',
       )}
