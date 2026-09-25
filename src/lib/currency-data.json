@@ -269,6 +269,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "Lek Albania",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "ca": {
@@ -541,6 +550,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "lek albanès",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "cs-CZ": {
@@ -813,6 +831,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "albánský lek",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "de-DE": {
@@ -1085,6 +1112,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "Albanischer Lek",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "en-US": {
@@ -1357,6 +1393,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "Albanian Lek",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "es": {
@@ -1629,6 +1674,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "lek",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "eu": {
@@ -1901,6 +1955,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "Albaniako leka",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "fr-FR": {
@@ -2173,6 +2236,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "lek albanais",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "it-IT": {
@@ -2445,6 +2517,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "lek albanese",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "nl-NL": {
@@ -2717,6 +2798,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "Albanese lek",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "pl-PL": {
@@ -2989,6 +3079,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "lek albański",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "pt": {
@@ -3261,6 +3360,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "Lek albanês",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "pt-BR": {
@@ -3533,6 +3641,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "Lek albanês",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "ro": {
@@ -3805,6 +3922,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "leka albaneză",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "fi": {
@@ -4077,6 +4203,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "Albanian lek",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "tr-TR": {
@@ -4349,6 +4484,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "Arnavutluk Leki",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "ru-RU": {
@@ -4621,6 +4765,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "Албанский лек",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "uk-UA": {
@@ -4893,6 +5046,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "албанський лек",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "he": {
@@ -5165,6 +5327,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "לק אלבני",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "ko": {
@@ -5437,6 +5608,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "알바니아 레크",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "ja-JP": {
@@ -5709,6 +5889,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "アルバニア レク",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "zh-CN": {
@@ -5981,6 +6170,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "阿尔巴尼亚列克",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   },
   "zh-TW": {
@@ -6253,6 +6451,15 @@
       "name_plural": "South African rand",
       "rounding": 0,
       "decimal_digits": 2
+    },
+    "ALL": {
+      "name": "阿尔巴尼亚列克",
+      "symbol_native": "Lek",
+      "symbol": "ALL",
+      "code": "ALL",
+      "name_plural": "Albanian lekë",
+      "rounding": 0,
+      "decimal_digits": 0
     }
   }
 }

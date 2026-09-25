@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
-import useSWR, { Fetcher } from 'swr'
+import useSWR from 'swr'
 
 export function useMediaQuery(query: string): boolean {
   const getMatches = (query: string): boolean => {
@@ -67,18 +67,48 @@ export function useActiveUser(groupId?: string) {
   return activeUser
 }
 
-interface FrankfurterAPIResponse {
-  base: string
+type FrankfurterRate = {
   date: string
-  rates: Record<string, number>
+  base: string
+  quote: string
+  rate: number
+}
+type CurrencyRate = { date: string; rate: number | undefined }
+
+// Frankfurter moved api.frankfurter.app to api.frankfurter.dev. The old host
+// only answers with a redirect that browsers reject (no CORS headers), so the
+// rate could not be fetched anymore. v2 also covers more currencies (e.g. ALL).
+const FRANKFURTER = 'https://api.frankfurter.dev/v2/rates'
+
+async function fetchRates(query: string) {
+  const res = await fetch(`${FRANKFURTER}?${query}`)
+  if (!res.ok)
+    throw new TypeError('Unsuccessful response from API', { cause: res })
+  return (await res.json()) as FrankfurterRate[]
 }
 
-const fetcher: Fetcher<FrankfurterAPIResponse> = (url: string) =>
-  fetch(url).then(async (res) => {
-    if (!res.ok)
-      throw new TypeError('Unsuccessful response from API', { cause: res })
-    return res.json() as Promise<FrankfurterAPIResponse>
-  })
+// Both currencies are quoted against EUR and divided: v2 rounds small rates
+// (e.g. ALL→EUR = 0.0109) to few digits, EUR-based quotes are more precise.
+async function fetchCurrencyRate(
+  date: string,
+  base: string,
+  target: string,
+): Promise<CurrencyRate> {
+  const quotes = [base, target].filter((code) => code !== 'EUR').join(',')
+  const query = `base=EUR&quotes=${quotes}`
+  let rates = await fetchRates(`${query}&date=${date}`)
+  // No rate for this day yet (e.g. a future date): use the latest one.
+  if (!rates.length) rates = await fetchRates(query)
+  const eurTo = (code: string) =>
+    code === 'EUR' ? 1 : rates.find((r) => r.quote === code)?.rate
+  const from = eurTo(base)
+  const to = eurTo(target)
+  return {
+    // The older of both quotes; differs from `date` when no rate existed then.
+    date: rates.map((r) => r.date).sort()[0] ?? date,
+    rate: from && to ? Number((to / from).toPrecision(6)) : undefined,
+  }
+}
 
 export function useCurrencyRate(
   date: Date,
@@ -88,30 +118,27 @@ export function useCurrencyRate(
   const dateString = dayjs(date).format('YYYY-MM-DD')
 
   // Only send request if both currency codes are given and not the same
-  const url =
+  const key =
     !isNaN(date.getTime()) &&
     !!baseCurrency.length &&
     !!targetCurrency.length &&
     baseCurrency !== targetCurrency &&
-    `https://api.frankfurter.app/${dateString}?base=${baseCurrency}`
-  const { data, error, isLoading, mutate } = useSWR<FrankfurterAPIResponse>(
-    url,
-    fetcher,
+    (['frankfurter', dateString, baseCurrency, targetCurrency] as const)
+  const { data, error, isLoading, mutate } = useSWR<CurrencyRate>(
+    key,
+    ([, day, base, target]: [string, string, string, string]) =>
+      fetchCurrencyRate(day, base, target),
     { shouldRetryOnError: false, revalidateOnFocus: false },
   )
 
   if (data) {
-    let exchangeRate = undefined
     let sentError = error
     if (!error && data.date !== dateString) {
       // this happens if for example, the requested date is in the future.
       sentError = new RangeError(data.date)
     }
-    if (data.rates[targetCurrency]) {
-      exchangeRate = data.rates[targetCurrency]
-    }
     return {
-      data: exchangeRate,
+      data: data.rate,
       error: sentError,
       isLoading,
       refresh: mutate,

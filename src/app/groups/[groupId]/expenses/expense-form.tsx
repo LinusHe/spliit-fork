@@ -429,7 +429,10 @@ export function ExpenseForm({
   }, [exchangeRate.data, usingCustomConversionRate])
 
   useEffect(() => {
-    if (!form.getFieldState('originalAmount').isTouched) return
+    // Convert while typing (dirty), not only after leaving the field
+    // (touched). An untouched stored amount of an edited expense stays as is.
+    const originalAmountState = form.getFieldState('originalAmount')
+    if (!originalAmountState.isTouched && !originalAmountState.isDirty) return
     const originalAmount = form.getValues('originalAmount') ?? 0
     const conversionRate = form.getValues('conversionRate')
 
@@ -450,6 +453,7 @@ export function ExpenseForm({
     form.watch('originalAmount'),
     form.watch('conversionRate'),
     form.getFieldState('originalAmount').isTouched,
+    form.getFieldState('originalAmount').isDirty,
   ])
 
   let conversionRateMessage = ''

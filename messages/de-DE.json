@@ -291,19 +291,19 @@
       "label": "Umzurechnender Betrag"
     },
     "conversionRateState": {
-      "customRate": "Benutzerdefinierte Rate verwenden",
+      "customRate": "Eigenen Kurs verwenden",
       "loading": "Wechselkurse abrufen…",
-      "success": "Erhaltene Zinssätze:",
-      "error": "Oops, wir konnten die aktuellsten Zinssätze nicht abrufen.",
-      "staleRate": "Verwendeter Zinssatz:",
-      "noRate": "Geben Sie unten einen benutzerdefinierten Zinssatz ein.",
-      "noDate": "Geben Sie das Ausgabedatum ein, um einen Umrechnungskurs zu erhalten.",
-      "dateMismatch": "Zinssätze von Datum: {date}",
+      "success": "Aktueller Kurs:",
+      "error": "Der Wechselkurs konnte gerade nicht abgerufen werden.",
+      "staleRate": "Verwendeter Kurs:",
+      "noRate": "Gib unten einen eigenen Kurs ein.",
+      "noDate": "Gib das Datum der Ausgabe ein, um einen Wechselkurs zu erhalten.",
+      "dateMismatch": "Kurs vom {date}.",
       "refresh": "Aktualisiere",
-      "currencyNotFound": "Oops, Frankfurter hat für diese Währung an diesem Tag keinen Zinssatz."
+      "currencyNotFound": "Für diese Währung gibt es an diesem Tag keinen Kurs."
     },
     "conversionRateField": {
-      "useCustom": "Benutze individuelle Rate",
+      "useCustom": "Eigenen Kurs verwenden",
       "label": "Wechselkurs",
       "useApi": "Benutze Zinssätze von Frankfurter"
     },
