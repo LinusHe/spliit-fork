@@ -889,8 +889,10 @@ export function ExpenseForm({
                 isCreate={isCreate}
                 onChange={(name, lat, lon) => {
                   form.setValue('locationName', name)
-                  if (lat !== undefined) form.setValue('latitude', lat)
-                  if (lon !== undefined) form.setValue('longitude', lon)
+                  // Manual input or clearing has no coordinates: don't keep
+                  // the ones of a previously detected place.
+                  form.setValue('latitude', lat)
+                  form.setValue('longitude', lon)
                 }}
               />
             </div>

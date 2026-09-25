@@ -17,8 +17,16 @@ export function LocationField({ value, onChange, isCreate }: LocationFieldProps)
   const [isLocating, setIsLocating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const autoDetectDone = useRef(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  const detectLocation = useCallback(async () => {
+  // Switching from the display to the input via click: continue typing there.
+  useEffect(() => {
+    if (isEditing) inputRef.current?.focus()
+  }, [isEditing])
+
+  const typed = useRef(false)
+
+  const detectLocation = useCallback(async (automatic = false) => {
     if (!navigator.geolocation || !navigator.onLine) return
 
     setIsLocating(true)
@@ -35,7 +43,8 @@ export function LocationField({ value, onChange, isCreate }: LocationFieldProps)
       const { latitude, longitude } = position.coords
       const result = await geocodeAction(latitude, longitude)
 
-      if (result.locationName) {
+      // Automatic detection must not overwrite what the user typed meanwhile.
+      if (result.locationName && !(automatic && typed.current)) {
         onChange(result.locationName, latitude, longitude)
       }
     } catch {
@@ -54,7 +63,7 @@ export function LocationField({ value, onChange, isCreate }: LocationFieldProps)
 
     navigator.permissions.query({ name: 'geolocation' }).then((result) => {
       if (result.state === 'granted') {
-        detectLocation()
+        detectLocation(true)
       }
     })
   }, [isCreate, value, detectLocation])
@@ -88,18 +97,24 @@ export function LocationField({ value, onChange, isCreate }: LocationFieldProps)
     <div className="relative w-full">
       <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
       <Input
+        ref={inputRef}
         placeholder={t('locationPlaceholder')}
         value={value ?? ''}
-        onChange={(e) => onChange(e.target.value || undefined)}
-        onBlur={() => {
-          if (value) setIsEditing(false)
+        // Without this, the first typed letter created a value and swapped
+        // the input for the read-only display mid-typing.
+        onFocus={() => setIsEditing(true)}
+        // A typed place has no coordinates; drop ones from auto-detection.
+        onChange={(e) => {
+          typed.current = true
+          onChange(e.target.value || undefined)
         }}
+        onBlur={() => setIsEditing(false)}
         className="text-base pl-9 pr-10"
       />
       <button
         type="button"
         className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
-        onClick={detectLocation}
+        onClick={() => detectLocation()}
         disabled={isLocating}
         title={t('detectLocation')}
       >
