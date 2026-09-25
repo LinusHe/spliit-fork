@@ -62,7 +62,13 @@ not an implemented self-service import format.
    between dialog and confirmation triggers another conflict. Restoring an
    online-deleted expense requires that same explicit choice. Defer keeps data
    and the queue intact. Conflicts pause the FIFO queue until resolved.
-6. Removed groups/participants or changed group currency block the affected
+6. Marking shares as already paid back is its own operation (`settle`). It
+   only touches `ExpensePaidFor.settledAt`, which edits preserve, so it never
+   conflicts: an expense deleted online makes it a no-op, and an online edit in
+   between keeps the version chain broken so later queued edits still report
+   their conflict. An edit form that settles a share follows its own new
+   version instead of reporting a conflict with itself.
+7. Removed groups/participants or changed group currency block the affected
    operation with a recoverable error and export option; no silent reassignment
    or currency conversion takes place.
 
