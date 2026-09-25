@@ -33,6 +33,8 @@ type Props = {
   isLoading: boolean
   /** Heading of the mobile picker sheet (usually the field label). */
   title: string
+  /** Shown first under "In dieser Gruppe" (e.g. currencies the group uses). */
+  preferred?: string[]
 }
 
 export function CurrencySelector({
@@ -41,6 +43,7 @@ export function CurrencySelector({
   defaultValue,
   isLoading,
   title,
+  preferred,
 }: Props) {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState<string>(defaultValue)
@@ -69,6 +72,7 @@ export function CurrencySelector({
         <PopoverContent className="p-0" align="start">
           <CurrencyCommand
             currencies={currencies}
+            preferred={preferred}
             onValueChange={(code) => {
               setValue(code)
               onValueChange(code)
@@ -95,6 +99,7 @@ export function CurrencySelector({
     >
       <CurrencyCommand
         currencies={currencies}
+        preferred={preferred}
         onValueChange={(id) => {
           setValue(id)
           onValueChange(id)
@@ -107,13 +112,15 @@ export function CurrencySelector({
   )
 }
 
-function CurrencyCommand({
+export function CurrencyCommand({
   currencies,
+  preferred = [],
   onValueChange,
   className,
   scrollClassName,
 }: {
   currencies: Currency[]
+  preferred?: string[]
   onValueChange: (currencyId: Currency['code']) => void
   className?: string
   scrollClassName?: string
@@ -132,14 +139,22 @@ function CurrencyCommand({
     }
   }
   const t = useTranslations('Currencies')
+  const groupOf = (currency: Currency) =>
+    preferred.includes(currency.code) ? 'preferred' : currencyGroup(currency)
   const currenciesByGroup = currencies.reduce<Record<string, Currency[]>>(
     (acc, currency) => ({
       ...acc,
-      [currencyGroup(currency)]: (acc[currencyGroup(currency)] ?? []).concat([
-        currency,
-      ]),
+      [groupOf(currency)]: (acc[groupOf(currency)] ?? []).concat([currency]),
     }),
     {},
+  )
+  // The group's own currencies first, in the given order, so they need no
+  // scrolling or searching.
+  currenciesByGroup.preferred?.sort(
+    (a, b) => preferred.indexOf(a.code) - preferred.indexOf(b.code),
+  )
+  const groups = Object.entries(currenciesByGroup).sort(
+    ([a], [b]) => Number(b === 'preferred') - Number(a === 'preferred'),
   )
 
   return (
@@ -149,7 +164,7 @@ function CurrencyCommand({
         className={cn('w-full', scrollClassName)}
       >
         <CommandEmpty>{t('noCurrency')}</CommandEmpty>
-        {Object.entries(currenciesByGroup).map(
+        {groups.map(
           ([group, groupCurrencies]) => (
             <CommandGroup key={group} heading={t(`${group}.heading`)}>
               {groupCurrencies.map((currency) => (

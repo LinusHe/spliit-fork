@@ -184,6 +184,12 @@
       "createDescription": "Alle Beträge und Salden werden in dieser Währung angegeben.",
       "customOption": "benutzerdefiniert",
       "editDescription": "Alle Beträge und Salden werden in dieser Währung angegeben. Bei Änderung dieser, werden bereits eingegebene Ausgaben NICHT umgerechnet, es sei denn, die Währung hat andere \"kleinere Einheiten\" als die aktuelle (z. B. Wechsel von US-Dollar zu Japanischem Yen)"
+    },
+    "QuickCurrenciesField": {
+      "label": "Zahlungswährungen",
+      "description": "Werden beim Erfassen einer Ausgabe neben {currency} direkt zur Auswahl angeboten – z. B. die Landeswährung einer Reise. In der Gruppe verwendete Währungen kommen automatisch dazu.",
+      "add": "Währung hinzufügen",
+      "remove": "{currency} entfernen"
     }
   },
   "ExpenseForm": {
@@ -344,6 +350,9 @@
     },
     "SettledHint": {
       "text": "{from} hat {to} bereits {amount} direkt bei einzelnen Ausgaben zurückgezahlt. Das ist in den Salden schon berücksichtigt – erfasse hier nur, was noch offen ist."
+    },
+    "QuickCurrency": {
+      "label": "Bezahlt in"
     }
   },
   "ExpenseDocumentsInput": {
@@ -632,6 +641,9 @@
     },
     "common": {
       "heading": "Geläufigste"
+    },
+    "preferred": {
+      "heading": "In dieser Gruppe"
     }
   },
   "Notifications": {

@@ -9,6 +9,8 @@ export const groupFormSchema = z
     information: z.string().optional(),
     currency: z.string().min(1, 'min1').max(5, 'max5'),
     currencyCode: z.union([z.string().length(3).nullish(), z.literal('')]), // ISO-4217 currency code
+    // Offered as a one-tap switch in the expense form (ISO-4217 codes).
+    quickCurrencies: z.array(z.string().length(3)).max(10).default([]),
     categoryPreset: z.string().default('all'),
     categoryIds: z.array(z.coerce.number()).default([]),
     participants: z

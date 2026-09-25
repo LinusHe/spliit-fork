@@ -184,6 +184,12 @@
       "create": "Create",
       "creating": "Creating…",
       "cancel": "Cancel"
+    },
+    "QuickCurrenciesField": {
+      "label": "Payment currencies",
+      "description": "Offered with one tap when adding an expense, besides {currency} – e.g. the local currency of a trip. Currencies used in the group are added automatically.",
+      "add": "Add currency",
+      "remove": "Remove {currency}"
     }
   },
   "ExpenseForm": {
@@ -336,6 +342,9 @@
     },
     "SettledHint": {
       "text": "{from} already paid {to} {amount} back directly in single expenses. That is already included in the balances — only record what is still open."
+    },
+    "QuickCurrency": {
+      "label": "Paid in"
     }
   },
   "ExpenseDocumentsInput": {
@@ -624,6 +633,9 @@
     },
     "other": {
       "heading": "Other currencies"
+    },
+    "preferred": {
+      "heading": "In this group"
     }
   },
   "Notifications": {

@@ -17,6 +17,9 @@ model Group {
   information        String?         @db.Text
   currency           String          @default("$")
   currencyCode       String?
+  /// Payment currencies offered as a one-tap switch when entering expenses
+  /// (besides the group currency), e.g. ALL for a trip to Albania.
+  quickCurrencies    String[]        @default([])
   categoryPreset     String          @default("all")
   categorySelections GroupCategory[]
   participants       Participant[]

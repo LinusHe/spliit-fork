@@ -126,6 +126,20 @@ export function localQuery(
   switch (path) {
     case 'groups.get':
       return { group: snapshot.group }
+    case 'groups.usedCurrencies': {
+      const counts = new Map<string, number>()
+      for (const e of snapshot.expenses)
+        if (e.originalCurrency?.length === 3)
+          counts.set(
+            e.originalCurrency,
+            (counts.get(e.originalCurrency) ?? 0) + 1,
+          )
+      return {
+        currencies: Array.from(counts)
+          .sort((a, b) => b[1] - a[1])
+          .map(([code]) => code),
+      }
+    }
     case 'groups.getDetails':
       return {
         group: snapshot.group,

@@ -32,6 +32,7 @@ export async function createGroup(groupFormValues: GroupFormValues) {
       information: groupFormValues.information,
       currency: groupFormValues.currency,
       currencyCode: groupFormValues.currencyCode,
+      quickCurrencies: groupFormValues.quickCurrencies,
       categoryPreset: groupFormValues.categoryPreset,
       categorySelections: {
         createMany: {
@@ -398,6 +399,7 @@ export async function updateGroup(
       information: groupFormValues.information,
       currency: groupFormValues.currency,
       currencyCode: groupFormValues.currencyCode,
+      quickCurrencies: groupFormValues.quickCurrencies,
       categoryPreset: groupFormValues.categoryPreset,
       categorySelections: {
         deleteMany: {},

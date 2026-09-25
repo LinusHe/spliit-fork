@@ -72,6 +72,8 @@ import { RecurrenceRule } from '@prisma/client'
 import { CalendarIcon, ChevronRight, Copy, Save } from 'lucide-react'
 import { v4 as uuid } from 'uuid'
 import { parseDuplicatedSplit } from './duplicate-expense'
+import { trpc } from '@/trpc/client'
+import { QuickCurrencySwitch } from './quick-currency-switch'
 import { SettleShares, SettledHint } from './settle-shares'
 import { SplitDifference } from './split-difference'
 import { useLocale, useTranslations } from 'next-intl'
@@ -337,6 +339,21 @@ export function ExpenseForm({
         },
   })
   const [isCategoryLoading, setCategoryLoading] = useState(false)
+  // Group currency, the group's payment currencies, then ones it used before.
+  const { data: usedCurrencies } = trpc.groups.usedCurrencies.useQuery(
+    { groupId: group.id },
+    { enabled: !!group.currencyCode },
+  )
+  const quickCurrencyCodes = Array.from(
+    new Set(
+      [
+        group.currencyCode ?? '',
+        // Older offline copies of a group predate the field.
+        ...(group.quickCurrencies ?? []),
+        ...(usedCurrencies?.currencies ?? []),
+      ].filter((code) => code.length === 3),
+    ),
+  ).slice(0, 5)
   const activeUserId = useActiveUser(group.id)
   const [settleQuestion, setSettleQuestion] = useState<{
     names: string[]
@@ -769,6 +786,24 @@ export function ExpenseForm({
               render={({ field: { onChange, ...field } }) => (
                 <FormItem className="sm:order-3">
                   <FormLabel>{t(`${sExpense}.currencyField.label`)}</FormLabel>
+                  {group.currencyCode && (
+                    <QuickCurrencySwitch
+                      codes={quickCurrencyCodes}
+                      value={form.watch(field.name) || group.currencyCode}
+                      onChange={(code) => {
+                        onChange(code)
+                        // Paying in another currency: type that amount next.
+                        if (code !== group.currencyCode)
+                          setTimeout(() =>
+                            document
+                              .querySelector<HTMLInputElement>(
+                                'input[name="originalAmount"]',
+                              )
+                              ?.focus(),
+                          )
+                      }}
+                    />
+                  )}
                   <FormControl>
                     {group.currencyCode ? (
                       <CurrencySelector
@@ -776,6 +811,7 @@ export function ExpenseForm({
                         defaultValue={form.watch(field.name) ?? ''}
                         isLoading={false}
                         title={t(`${sExpense}.currencyField.label`)}
+                        preferred={quickCurrencyCodes}
                         onValueChange={(v) => onChange(v)}
                       />
                     ) : (

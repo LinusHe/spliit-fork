@@ -57,6 +57,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { UseFormReturn, useFieldArray, useForm } from 'react-hook-form'
 import { CurrencySelector } from './currency-selector'
+import { QuickCurrenciesField } from './quick-currencies-field'
 import { Textarea } from './ui/textarea'
 
 export type Props = {
@@ -234,6 +235,7 @@ export function GroupForm({
           information: group.information ?? '',
           currency: group.currency ?? '',
           currencyCode: group.currencyCode ?? '',
+          quickCurrencies: group.quickCurrencies ?? [],
           categoryPreset: group.categoryPreset ?? 'all',
           categoryIds:
             group.categorySelections?.map(
@@ -245,7 +247,9 @@ export function GroupForm({
           name: '',
           information: '',
           currency: '',
-          currencyCode: process.env.NEXT_PUBLIC_DEFAULT_CURRENCY_CODE || 'USD', // TODO: If NEXT_PUBLIC_DEFAULT_CURRENCY_CODE, is not set, determine the default currency code based on locale
+          // Euro unless configured otherwise.
+          currencyCode: process.env.NEXT_PUBLIC_DEFAULT_CURRENCY_CODE || 'EUR',
+          quickCurrencies: [],
           categoryPreset: 'all',
           categoryIds: [],
           participants: [
@@ -384,6 +388,32 @@ export function GroupForm({
                 </FormItem>
               )}
             />
+
+            {!!form.watch('currencyCode')?.length && (
+              <div className="col-span-2">
+                <FormField
+                  control={form.control}
+                  name="quickCurrencies"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('QuickCurrenciesField.label')}</FormLabel>
+                      <QuickCurrenciesField
+                        value={field.value ?? []}
+                        onChange={field.onChange}
+                        currencies={defaultCurrencyList(locale as Locale)}
+                        groupCurrencyCode={form.watch('currencyCode') ?? ''}
+                      />
+                      <FormDescription>
+                        {t('QuickCurrenciesField.description', {
+                          currency: form.watch('currencyCode') ?? '',
+                        })}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
 
             <div className="col-span-2">
               <FormField
