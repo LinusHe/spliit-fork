@@ -65,6 +65,7 @@ import { RecurrenceRule } from '@prisma/client'
 import { CalendarIcon, ChevronRight, Copy, Save } from 'lucide-react'
 import { v4 as uuid } from 'uuid'
 import { parseDuplicatedSplit } from './duplicate-expense'
+import { SplitDifference } from './split-difference'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -1073,7 +1074,11 @@ export function ExpenseForm({
                                 {field.value?.some(
                                   ({ participant }) => participant === id,
                                 ) &&
-                                  !form.watch('isReimbursement') && (
+                                  !form.watch('isReimbursement') &&
+                                  // By amount, the input already shows it; the
+                                  // ratio-based preview would disagree while the
+                                  // amounts don't add up yet.
+                                  form.watch('splitMode') !== 'BY_AMOUNT' && (
                                     <span className="text-muted-foreground ml-2">
                                       (
                                       {formatCurrency(
@@ -1325,7 +1330,26 @@ export function ExpenseForm({
                       }}
                     />
                   ))}
-                  <FormMessage />
+                  <SplitDifference
+                    splitMode={form.watch('splitMode')}
+                    amount={form.watch('amount')}
+                    paidFor={form.watch('paidFor')}
+                    currency={groupCurrency}
+                    onDistribute={(paidFor) => {
+                      form.setValue('paidFor', paidFor as any, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                      // Keep the auto-balance from overwriting the result.
+                      setManuallyEditedParticipants(
+                        new Set(paidFor.map((p) => p.participant)),
+                      )
+                    }}
+                  />
+                  {/* The difference box above explains sum mismatches. */}
+                  {!['amountSum', 'percentageSum'].includes(
+                    String(form.formState.errors.paidFor?.message),
+                  ) && <FormMessage />}
                 </FormItem>
               )}
             />

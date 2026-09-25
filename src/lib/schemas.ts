@@ -154,10 +154,13 @@ export const expenseFormSchema = z
       case 'BY_SHARES':
         break // noop
       case 'BY_AMOUNT': {
-        const sum = expense.paidFor.reduce(
-          (sum, { shares }) => new Decimal(shares).add(sum),
-          new Decimal(0),
-        )
+        const sum = expense.paidFor.reduce((sum, { shares }) => {
+          // An emptied field is '' and `new Decimal('')` threw, so validation
+          // crashed instead of reporting (upstream #639).
+          const value = String(shares).trim().replace(',', '.')
+          if (value === '' || !Number.isFinite(Number(value))) return sum
+          return new Decimal(value).add(sum)
+        }, new Decimal(0))
         if (!sum.equals(new Decimal(expense.amount))) {
           // const detail =
           //   sum < expense.amount

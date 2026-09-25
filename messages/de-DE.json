@@ -99,7 +99,17 @@
       "button": "Mit URL hinzufügen",
       "title": "Gruppe mit URL hinzufügen",
       "description": "Wenn eine Gruppe mit dir geteilt wurde, kannst du ihre URL hier einfügen, um sie zu deiner Liste hinzuzufügen.",
-      "error": "Ups, wir können die Gruppe mit der angegebenen URL nicht finden…"
+      "error": "Ups, wir können die Gruppe mit der angegebenen URL nicht finden…",
+      "urlMode": "URL eingeben",
+      "qrMode": "QR-Code scannen",
+      "scanner": {
+        "startCamera": "Kamera starten",
+        "stopScanning": "Scannen beenden",
+        "permissionDenied": "Kein Kamerazugriff. Bitte erlaube den Zugriff auf die Kamera, um QR-Codes zu scannen.",
+        "noCamera": "Auf diesem Gerät wurde keine Kamera gefunden.",
+        "cameraError": "Kamera konnte nicht gestartet werden. Bitte versuche es erneut.",
+        "permissionError": "Kein Zugriff auf die Kamera. Bitte prüfe die Berechtigungen."
+      }
     },
     "NotFound": {
       "text": "Diese Gruppe existiert nicht.",
@@ -310,7 +320,14 @@
     "duplicate": "Duplizieren",
     "scanHint": "Tipp: Nutze den Kassenbon-Scanner auf der Ausgaben-Seite",
     "locationPlaceholder": "Ort (optional)",
-    "detectLocation": "Standort erkennen"
+    "detectLocation": "Standort erkennen",
+    "SplitDifference": {
+      "missing": "Es fehlen noch {amount}",
+      "surplus": "{amount} zu viel",
+      "sum": "Aufgeteilt: {sum} von {total}",
+      "distributeMissing": "{amount} gleichmäßig aufteilen",
+      "distributeSurplus": "{amount} gleichmäßig abziehen"
+    }
   },
   "ExpenseDocumentsInput": {
     "TooBigToast": {
@@ -455,7 +472,14 @@
     "title": "Teilen",
     "description": "Teile die URL, damit andere Mitglieder die Gruppe sehen und Ausgaben hinzufügen können.",
     "warning": "Achtung!",
-    "warningHelp": "Jede Person mit der Gruppen-URL kann Ausgaben sehen und editieren. Teile den Link mit Bedacht!"
+    "warningHelp": "Jede Person mit der Gruppen-URL kann Ausgaben sehen und editieren. Teile den Link mit Bedacht!",
+    "copyLink": "Link kopieren",
+    "shareLink": "Link teilen",
+    "qrCode": {
+      "title": "Per QR-Code teilen",
+      "description": "Scanne diesen QR-Code, um die Gruppe auf einem anderen Gerät zu öffnen.",
+      "download": "QR-Code herunterladen"
+    }
   },
   "SchemaErrors": {
     "min1": "Gib mindestens ein Zeichen ein.",
