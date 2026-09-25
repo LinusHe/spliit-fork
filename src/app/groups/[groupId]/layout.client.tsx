@@ -55,7 +55,7 @@ export function GroupLayoutClient({
         <ExpenseDrawerProvider>
           <GroupHeader />
           <DesktopNav groupId={groupId} />
-          <div className="md:pt-12">{children}</div>
+          <div className="flex flex-col gap-6 md:pt-12">{children}</div>
         </ExpenseDrawerProvider>
       </CurrentGroupProvider>
     )
@@ -66,7 +66,7 @@ export function GroupLayoutClient({
       <ExpenseDrawerProvider>
         <GroupHeader />
         <DesktopNav groupId={groupId} />
-        <div className="md:pt-12">{children}</div>
+        <div className="flex flex-col gap-6 md:pt-12">{children}</div>
         {/* Bottom padding for the floating nav on mobile */}
         <div className="h-24 md:hidden" />
         <BottomNav groupId={groupId} />
