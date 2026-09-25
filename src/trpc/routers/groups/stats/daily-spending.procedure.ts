@@ -1,3 +1,4 @@
+import { participantShareOf } from '@/lib/shares'
 import { prisma } from '@/lib/prisma'
 import { baseProcedure } from '@/trpc/init'
 import { z } from 'zod'
@@ -12,6 +13,7 @@ export const getDailySpendingProcedure = baseProcedure
   .query(async ({ input: { groupId, participantId } }) => {
     const expenses = await prisma.expense.findMany({
       select: {
+        id: true, // seeds who gets the leftover cent (see shares.ts)
         amount: true,
         expenseDate: true,
         isReimbursement: true,
@@ -39,29 +41,10 @@ export const getDailySpendingProcedure = baseProcedure
 
       if (participantId) {
         // Calculate this participant's share (same logic as category stats)
-        const paidForEntry = exp.paidFor.find(
-          (pf) => pf.participant.id === participantId,
-        )
-        if (!paidForEntry) continue
-
-        const totalShares = exp.paidFor.reduce(
-          (sum, pf) => sum + (pf.shares ?? 0),
-          0,
-        )
-
-        if (exp.splitMode === 'EVENLY') {
-          amount = exp.amount / exp.paidFor.length
-        } else if (exp.splitMode === 'BY_SHARES' && totalShares > 0) {
-          amount =
-            (exp.amount * (paidForEntry.shares ?? 0)) / totalShares
-        } else if (exp.splitMode === 'BY_AMOUNT') {
-          amount = paidForEntry.shares ?? 0
-        } else if (exp.splitMode === 'BY_PERCENTAGE' && totalShares > 0) {
-          amount =
-            (exp.amount * (paidForEntry.shares ?? 0)) / totalShares
-        } else {
-          amount = exp.amount / exp.paidFor.length
-        }
+        const share = participantShareOf(participantId, exp)
+        if (share === null) continue
+        // Same apportionment as the balances: whole minor units, no drift.
+        amount = share
       } else {
         amount = exp.amount
       }

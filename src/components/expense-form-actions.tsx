@@ -1,6 +1,7 @@
 'use server'
 import { getCategoriesForGroup } from '@/lib/api'
 import { env } from '@/lib/env'
+import { getRuntimeFeatureFlags } from '@/lib/featureFlags'
 import { formatCategoryForAIPrompt } from '@/lib/utils'
 import OpenAI from 'openai'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources/index.mjs'
@@ -19,6 +20,11 @@ export async function extractCategoryFromTitle(
   groupId?: string,
 ) {
   'use server'
+  // Server actions are directly callable: the feature flag only hides the
+  // feature in the UI, so enforce it here too (upstream #560).
+  const { enableCategoryExtract } = await getRuntimeFeatureFlags()
+  if (!enableCategoryExtract) throw new Error('Category extraction is disabled.')
+
   const categories = await getCategoriesForGroup(groupId)
 
   const defaultPrompt = `

@@ -228,14 +228,10 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
         body: formData,
       })
       if (!uploadRes.ok) throw new Error('Upload failed')
-      const { path: filePath } = (await uploadRes.json()) as { path: string }
+      const { filename } = (await uploadRes.json()) as { filename: string }
 
       if (extractItems) {
-        const result = await extractExpenseWithItemsFromImage(
-          filePath,
-          file.type,
-          groupId,
-        )
+        const result = await extractExpenseWithItemsFromImage(filename, groupId)
         setReceiptInfo(result)
         if (result.items.length > 0) {
           setItems(
@@ -248,8 +244,7 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
         }
       } else {
         const result = await extractExpenseInformationFromImage(
-          filePath,
-          file.type,
+          filename,
           groupId,
         )
         setReceiptInfo(result)
@@ -314,7 +309,7 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
 
   const itemsTotal = items.reduce((sum, item) => sum + item.price, 0)
   const totalMatches =
-    receiptInfo && Math.abs(itemsTotal - receiptInfo.amount) < 0.02
+    receiptInfo && Math.abs(itemsTotal - (receiptInfo.amount ?? 0)) < 0.02
 
   const expensePreview = hasItems
     ? groupItemsIntoExpenses(items, receiptInfo?.title ?? 'Receipt')
@@ -324,7 +319,7 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
     if (!receiptInfo || !group) return
     router.push(
       `/groups/${group.id}/expenses/create?amount=${
-        receiptInfo.amount
+        receiptInfo.amount ?? ''
       }&categoryId=${receiptInfo.categoryId}&date=${
         receiptInfo.date
       }&title=${encodeURIComponent(receiptInfo.title ?? '')}`,
@@ -528,7 +523,7 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
           {currency && receiptInfo && (
             <span>
               {t('Dialog.total')}:{' '}
-              {formatCurrency(currency, receiptInfo.amount, locale, true)}
+              {formatCurrency(currency, receiptInfo.amount ?? 0, locale, true)}
             </span>
           )}
           <span>{receiptInfo && formatReceiptDate(receiptInfo.date)}</span>
@@ -588,7 +583,7 @@ function ReceiptDialogContent({ onClose }: { onClose: () => void }) {
           Σ {itemsTotal.toFixed(2)}€
           {!totalMatches &&
             receiptInfo &&
-            ` (${t('Dialog.total')}: ${receiptInfo.amount.toFixed(2)}€)`}
+            ` (${t('Dialog.total')}: ${(receiptInfo.amount ?? 0).toFixed(2)}€)`}
         </span>
       </div>
 

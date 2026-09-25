@@ -193,11 +193,12 @@ function CreateExpenseInDrawer({
       group={group}
       categories={categories}
       drawerSearchParams={searchParams}
-      onSubmit={async (expenseFormValues, participantId) => {
+      onSubmit={async (expenseFormValues, participantId, _, expenseId) => {
         await createExpenseMutateAsync({
           groupId,
           expenseFormValues,
           participantId,
+          expenseId,
         })
         utils.groups.expenses.invalidate()
         closeDrawer()

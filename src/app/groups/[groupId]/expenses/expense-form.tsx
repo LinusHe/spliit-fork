@@ -49,10 +49,12 @@ import {
   SplittingOptions,
   expenseFormSchema,
 } from '@/lib/schemas'
+import { distributeAmount } from '@/lib/shares'
 import { calculateShare } from '@/lib/totals'
 import {
   amountAsDecimal,
   amountAsMinorUnits,
+  formatAmountAsDecimal,
   cn,
   formatCurrency,
   getCurrencyFromGroup,
@@ -61,6 +63,7 @@ import { AppRouterOutput } from '@/trpc/routers/_app'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { RecurrenceRule } from '@prisma/client'
 import { CalendarIcon, ChevronRight, Copy, Save } from 'lucide-react'
+import { v4 as uuid } from 'uuid'
 import { parseDuplicatedSplit } from './duplicate-expense'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -174,7 +177,13 @@ export function ExpenseForm({
   group: NonNullable<AppRouterOutput['groups']['get']['group']>
   categories: AppRouterOutput['categories']['list']['categories']
   expense?: AppRouterOutput['groups']['expenses']['get']['expense']
-  onSubmit: (value: ExpenseFormValues, participantId?: string, baseVersion?: string) => Promise<void>
+  onSubmit: (
+    value: ExpenseFormValues,
+    participantId?: string,
+    baseVersion?: string,
+    /** Id for a new expense, minted here so the split preview matches. */
+    expenseId?: string,
+  ) => Promise<void>
   onDelete?: (participantId?: string, baseVersion?: string) => Promise<void>
   duplicateUrl?: string
   onDuplicate?: () => void
@@ -186,6 +195,9 @@ export function ExpenseForm({
   const offline = useOfflineStatus()
   // Keep the version the form was OPENED with, not a background-refetched version.
   const baseVersion = useRef(expense?.syncVersion)
+  // Who gets the leftover cent of an uneven split depends on the expense id
+  // (see lib/shares.ts); mint it now so the preview equals the saved split.
+  const [newExpenseId] = useState(() => uuid())
   const [saveError, setSaveError] = useState<string | null>(null)
   const locale = useLocale() as Locale
   const isCreate = expense === undefined
@@ -344,7 +356,12 @@ export function ExpenseForm({
     }
     try {
       setSaveError(null)
-      await onSubmit(values, activeUserId ?? undefined, baseVersion.current)
+      await onSubmit(
+        values,
+        activeUserId ?? undefined,
+        baseVersion.current,
+        expense ? undefined : newExpenseId,
+      )
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Speichern fehlgeschlagen. Deine Eingabe bleibt erhalten.')
     }
@@ -407,17 +424,22 @@ export function ExpenseForm({
       })
 
       if (remainingParticipants > 0) {
-        let amountPerRemaining = 0
-        if (splitMode === 'BY_AMOUNT') {
-          amountPerRemaining = remainingAmount / remainingParticipants
-        }
+        // Apportion in minor units so the auto-filled amounts add up to the
+        // total exactly (95 over three: 31.67 + 31.67 + 31.66, not 31.67 x 3,
+        // which the "amounts must add up" validation then rejected).
+        const amountsPerRemaining = distributeAmount(
+          amountAsMinorUnits(remainingAmount, groupCurrency),
+          remainingParticipants,
+        )
 
+        let remainingIndex = 0
         newPaidFor = newPaidFor.map((participant) => {
           if (!editedParticipants.includes(participant.participant)) {
             return {
               ...participant,
-              shares: amountPerRemaining.toFixed(
-                groupCurrency.decimal_digits,
+              shares: formatAmountAsDecimal(
+                amountsPerRemaining[remainingIndex++],
+                groupCurrency,
               ) as any, // Keep as string for consistent schema handling
             }
           }
@@ -1057,6 +1079,7 @@ export function ExpenseForm({
                                       {formatCurrency(
                                         groupCurrency,
                                         calculateShare(id, {
+                                          id: expense?.id ?? newExpenseId,
                                           amount: amountAsMinorUnits(
                                             Number(form.watch('amount')),
                                             groupCurrency,

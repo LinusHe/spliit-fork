@@ -30,11 +30,12 @@ export function CreateExpenseForm({
     <ExpenseForm
       group={group}
       categories={categories}
-      onSubmit={async (expenseFormValues, participantId) => {
+      onSubmit={async (expenseFormValues, participantId, _, expenseId) => {
         await createExpenseMutateAsync({
           groupId,
           expenseFormValues,
           participantId,
+          expenseId,
         })
         utils.groups.expenses.invalidate()
         router.push(`/groups/${group.id}`)

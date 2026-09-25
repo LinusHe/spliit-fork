@@ -17,14 +17,21 @@ export const createGroupExpenseProcedure = baseProcedure
       groupId: z.string().min(1),
       expenseFormValues: expenseFormSchema,
       participantId: z.string().optional(),
+      // Minted by the form so its split preview (who gets the leftover cent)
+      // matches the saved expense. Omitted -> minted here as before.
+      expenseId: z.string().min(1).max(100).optional(),
     }),
   )
   .mutation(
-    async ({ input: { groupId, expenseFormValues, participantId } }) => {
+    async ({
+      input: { groupId, expenseFormValues, participantId, expenseId },
+    }) => {
       const expense = await createExpense(
         expenseFormValues,
         groupId,
         participantId,
+        undefined,
+        expenseId,
       )
 
       // Fire-and-forget push notification

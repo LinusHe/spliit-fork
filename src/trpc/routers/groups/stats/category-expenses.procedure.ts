@@ -1,3 +1,4 @@
+import { participantShareOf } from '@/lib/shares'
 import { prisma } from '@/lib/prisma'
 import { baseProcedure } from '@/trpc/init'
 import { z } from 'zod'
@@ -40,24 +41,10 @@ export const getCategoryExpensesProcedure = baseProcedure
         let amount: number
 
         if (participantId) {
-          const paidForEntry = e.paidFor.find(
-            (pf) => pf.participant.id === participantId,
-          )
-          if (!paidForEntry) return null
-
-          const totalShares = e.paidFor.reduce((sum, pf) => sum + (pf.shares ?? 0), 0)
-
-          if (e.splitMode === 'EVENLY') {
-            amount = (e.amount / e.paidFor.length) / 100
-          } else if (e.splitMode === 'BY_SHARES' && totalShares > 0) {
-            amount = (e.amount * (paidForEntry.shares ?? 0) / totalShares) / 100
-          } else if (e.splitMode === 'BY_AMOUNT') {
-            amount = (paidForEntry.shares ?? 0) / 100
-          } else if (e.splitMode === 'BY_PERCENTAGE' && totalShares > 0) {
-            amount = (e.amount * (paidForEntry.shares ?? 0) / totalShares) / 100
-          } else {
-            amount = (e.amount / e.paidFor.length) / 100
-          }
+          const share = participantShareOf(participantId, e)
+          if (share === null) return null
+          // Same apportionment as the balances: whole minor units, no drift.
+          amount = share / 100
         } else {
           amount = e.amount / 100
         }

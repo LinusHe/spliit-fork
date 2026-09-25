@@ -219,7 +219,9 @@ export async function enqueue(path: string, input: Record<string, any>) {
     )
   const snapshot = project(saved, data.queue)
   const kind = path.split('.').at(-1) as PendingMutation['kind']
-  const expenseId = kind === 'create' ? uuid() : input.expenseId
+  // The form mints the id of a new expense (its split preview depends on it).
+  const expenseId =
+    kind === 'create' ? input.expenseId ?? uuid() : input.expenseId
   const current = snapshot.expenses.find((e) => e.id === expenseId)
   if (kind !== 'create' && !current)
     throw new Error('Ausgabe nicht lokal vorhanden. Bitte neu laden.')

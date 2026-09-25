@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { readFile, unlink, stat } from 'fs/promises'
 import path from 'path'
-
-const UPLOAD_DIR = '/tmp/receipts'
+import { RECEIPT_UPLOAD_DIR as UPLOAD_DIR } from '@/lib/receipt-upload'
 
 export async function GET(request: NextRequest) {
   const filename = request.nextUrl.searchParams.get('f')

@@ -1,6 +1,8 @@
 'use server'
 import { getCategoriesForGroup } from '@/lib/api'
 import { env } from '@/lib/env'
+import { getRuntimeFeatureFlags } from '@/lib/featureFlags'
+import { resolveReceiptUpload } from '@/lib/receipt-upload'
 import { formatCategoryForAIPrompt } from '@/lib/utils'
 import { readFile, unlink } from 'fs/promises'
 import OpenAI from 'openai'
@@ -8,12 +10,21 @@ import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources/index.m
 
 const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY })
 
+// Server actions are directly callable: the feature flag only hides the button,
+// so enforce it here too (upstream #560).
+async function assertReceiptExtractEnabled() {
+  const { enableReceiptExtract } = await getRuntimeFeatureFlags()
+  if (!enableReceiptExtract) throw new Error('Receipt extraction is disabled.')
+}
+
 export async function extractExpenseInformationFromImage(
-  filePath: string,
-  mimeType: string,
+  filename: string,
   groupId?: string,
 ) {
   'use server'
+
+  await assertReceiptExtractEnabled()
+  const { filePath, mimeType } = resolveReceiptUpload(filename)
 
   // Read file from disk and convert to base64
   let imageBase64: string
@@ -62,8 +73,11 @@ Return the amount, the category, the date and the title with just a comma betwee
   const title = titleParts.join(',').trim() || null
   const parsedDate = date?.trim()
   const today = new Date().toISOString().split('T')[0]
+  // The model is asked for a plain number, but nothing guarantees it obliges:
+  // report "not extracted" instead of passing NaN on to the form (#560).
+  const amount = Number(amountString)
   return {
-    amount: Number(amountString),
+    amount: Number.isFinite(amount) ? amount : null,
     categoryId: categoryId?.trim() ?? null,
     date: !parsedDate || parsedDate === 'none' ? today : parsedDate,
     title,
@@ -86,11 +100,13 @@ export type ReceiptItemsExtractedInfo = ReceiptExtractedInfo & {
 }
 
 export async function extractExpenseWithItemsFromImage(
-  filePath: string,
-  mimeType: string,
+  filename: string,
   groupId?: string,
 ): Promise<ReceiptItemsExtractedInfo> {
   'use server'
+
+  await assertReceiptExtractEnabled()
+  const { filePath, mimeType } = resolveReceiptUpload(filename)
 
   // Read file from disk and convert to base64
   let imageBase64: string
