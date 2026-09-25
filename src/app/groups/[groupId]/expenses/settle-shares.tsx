@@ -1,11 +1,18 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Currency } from '@/lib/currency'
 import { useActiveUser } from '@/lib/hooks'
 import { getExpenseShares } from '@/lib/shares'
-import { cn, formatCurrency } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
 import { SplitMode } from '@prisma/client'
 import { CheckCircle2, HandCoins } from 'lucide-react'
@@ -82,47 +89,49 @@ export function SettleShares({
   }
 
   return (
-    <div
-      data-testid="settle-shares"
-      className={cn(
-        'mt-6 rounded-lg border p-3',
-        allSettled &&
-          'border-emerald-200 bg-emerald-50 dark:border-emerald-400/30 dark:bg-emerald-950/40',
-      )}
-    >
-      <div className="mb-2 flex items-start gap-2">
-        {allSettled ? (
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-        ) : (
-          <HandCoins className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-        )}
-        <div className="min-w-0">
-          <p className="text-sm font-medium">
-            {allSettled ? t('allSettled') : t('title')}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {t('description', { payer: name(expense.paidById) })}
-          </p>
-        </div>
-      </div>
-      <ul className="divide-y">
+    // Same card layout as "Gezahlt für" above it.
+    <Card className="mt-4" data-testid="settle-shares">
+      <CardHeader>
+        <CardTitle className="flex justify-between">
+          <span>{allSettled ? t('allSettled') : t('title')}</span>
+          {open.length > 1 && (
+            <Button
+              variant="link"
+              type="button"
+              className="-my-2 -mx-4"
+              disabled={busy}
+              onClick={() =>
+                void settle(
+                  open.map((p) => p.participantId),
+                  true,
+                )
+              }
+            >
+              {t('settleAll')}
+            </Button>
+          )}
+        </CardTitle>
+        <CardDescription>
+          {t('description', { payer: name(expense.paidById) })}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pb-0">
         {debtors.map((p) => (
-          <li
+          <div
             key={p.participantId}
-            className="flex items-center justify-between gap-3 py-2"
+            className="flex items-center gap-3 border-t -mx-6 px-6 py-3"
           >
             <label
               htmlFor={`settle-${p.participantId}`}
-              className="min-w-0 flex-1 text-sm"
+              className="flex-1 text-sm"
             >
-              <span className={cn(p.settledAt && 'text-muted-foreground')}>
-                {name(p.participantId)}
-              </span>{' '}
-              <span className="tabular-nums text-muted-foreground">
-                · {formatCurrency(currency, shares.get(p.participantId) ?? 0, locale)}
+              {name(p.participantId)}
+              <span className="text-muted-foreground ml-2">
+                ({formatCurrency(currency, shares.get(p.participantId) ?? 0, locale)})
               </span>
               {p.settledAt && (
-                <span className="ml-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                  <CheckCircle2 className="h-3 w-3" />
                   {t('paid')}
                 </span>
               )}
@@ -136,28 +145,10 @@ export function SettleShares({
                 void settle([p.participantId], checked)
               }
             />
-          </li>
+          </div>
         ))}
-      </ul>
-      {open.length > 1 && (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="mt-2 w-full"
-          disabled={busy}
-          onClick={() =>
-            void settle(
-              open.map((p) => p.participantId),
-              true,
-            )
-          }
-        >
-          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-          {t('settleAll')}
-        </Button>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 

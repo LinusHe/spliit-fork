@@ -39,7 +39,7 @@ test('marking a share as paid settles it everywhere', async ({
   await page.getByText('Original Dinner', { exact: true }).click()
   const section = page.getByTestId('settle-shares')
   await expect(section).toContainText('Schon zurückgezahlt?')
-  await expect(section).toContainText('Bob · 12,00')
+  await expect(section).toContainText(/Bob\s*\(12,00/)
   await settleSwitch(page).click()
   await expect(section).toContainText('Alle haben zurückgezahlt')
   await expect.poll(() => bobSettled(request, f)).toBe(true)

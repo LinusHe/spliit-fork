@@ -1562,6 +1562,20 @@ export function ExpenseForm({
           </Card>
         )}
 
+        {/* Saved on its own when toggled, independent of the save button. */}
+        {expense && (
+          <SettleShares
+            expense={expense}
+            participants={group.participants}
+            currency={groupCurrency}
+            onSettled={(previous, version) => {
+              // Follow our own mark; a foreign change keeps the old base so
+              // saving still reports the conflict.
+              if (version && baseVersion.current === previous)
+                baseVersion.current = version
+            }}
+          />
+        )}
         <div className="flex flex-wrap mt-4 gap-2">
           <SubmitButton loadingContent={t(isCreate ? 'creating' : 'saving')}>
             <Save className="w-4 h-4 mr-2" />
@@ -1582,20 +1596,6 @@ export function ExpenseForm({
             </Button>
           )}
         </div>
-        {/* Saved on its own, so it sits below the form's actions. */}
-        {expense && (
-          <SettleShares
-            expense={expense}
-            participants={group.participants}
-            currency={groupCurrency}
-            onSettled={(previous, version) => {
-              // Follow our own mark; a foreign change keeps the old base so
-              // saving still reports the conflict.
-              if (version && baseVersion.current === previous)
-                baseVersion.current = version
-            }}
-          />
-        )}
       </form>
     </Form>
   )
